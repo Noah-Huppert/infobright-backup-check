@@ -1,0 +1,92 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Infobright volume backup process with end to end testing",
+    "Parameters": {
+        "ProcessName": {
+            "Type": "String",
+            "Default": "ib-backup",
+            "Description": "Named used in all the resources created for the backup process"
+        },
+        "StepLambdaCodeBucket": {
+            "Type": "String",
+            "Description": "Name of the S3 bucket which step lambda code is stored in"
+        },
+        "StepCreateVolumeCodeKey": {
+            "Type": "String",
+            "Description": "Name of lambda deployment artifact for the create volume step"
+        },
+        "SaltAPIUser": {
+            "Type": "String",
+            "Default": "ibbackup",
+            "Description": "Salt API user"
+        },
+        "SaltAPIPassword": {
+            "Type": "String",
+            "Description": "Salt API password"
+        }
+    },
+    "Resources": {
+        "StartTrigger": {
+            "DependsOn": "StepCreateVolumeLambda",
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+                "Name": { "Fn::Join": [ "-", [ 
+                    { "Ref": "ProcessName" },
+                    "start-trigger"
+                ] ] },
+                "Description": "CloudWatch rule which starts the entire backup process",
+                "ScheduleExpression": "cron(0 0 * * ? *)"
+            }
+        },
+
+        "StepLambdaExecRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": { "Fn::Join": [ "-", [
+                    { "Ref": "ProcessName" },
+                    "step-lambda-execution-role"
+                ] ] },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [ {
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": [ "lambda.amazonaws.com" ]
+                        },
+                        "Action": [ "sts:AssumeRole" ]
+                    } ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ]
+            }
+        },
+
+        "StepCreateVolumeLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "ProcessName" },
+                    "step-create-volume"
+                ] ] },
+                "Description": "Creates a volume to test the IB snapshot",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Fn::Join": [ "", [
+                        { "Ref": "StepCreateVolumeCodeKey" }
+                    ] ] }
+                },
+                "Handler": "step_create_volume.main",
+                "Environment": {
+                    "Variables": {
+                        "SALT_API_USER": { "Ref": "SaltAPIUser" },
+                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
+                    }
+                },
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6"
+            }
+        }
+    }
+}
