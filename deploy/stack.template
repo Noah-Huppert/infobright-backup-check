@@ -13,7 +13,11 @@
         },
         "StepCreateVolumeCodeKey": {
             "Type": "String",
-            "Description": "Name of lambda deployment artifact for the create volume step"
+            "Description": "Location of create volume step lambda deployment artifact in code bucket"
+        },
+        "StepWaitVolumeCreatedCodeKey": {
+            "Type": "String",
+            "Description": "Location of wait volume created step lambda deployment artifact in code bucket"
         },
         "SaltAPIUser": {
             "Type": "String",
@@ -88,9 +92,32 @@
                 "Description": "Creates a volume to test the IB snapshot",
                 "Code": {
                     "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Fn::Join": [ "", [
-                        { "Ref": "StepCreateVolumeCodeKey" }
-                    ] ] }
+                    "S3Key": { "Ref": "StepCreateVolumeCodeKey" }
+                },
+                "Handler": "step_create_volume.main",
+                "Environment": {
+                    "Variables": {
+                        "SALT_API_USER": { "Ref": "SaltAPIUser" },
+                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
+                    }
+                },
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6"
+            }
+        },
+
+        "StepWaitVolumeCreatedLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "ProcessName" },
+                    "step-wait-volume-created"
+                ] ] },
+                "Description": "Waits for the ib snapshot test volume to be created",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitVolumeCreatedCodeKey" }
                 },
                 "Handler": "step_create_volume.main",
                 "Environment": {
