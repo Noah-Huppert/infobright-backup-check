@@ -8,7 +8,7 @@ import os.path
 import hashlib
 import zipfile
 import subprocess
-from typing import Dict
+from typing import Dict, List
 
 from git import Repo
 import boto3
@@ -90,15 +90,8 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
         - aws_profile: Name of aws credentials profile, None if default credentials should be used
     """
     # Assemble deploy command arguments
-    args = ['aws']
-
-    # ... If custom aws profile specified
-    if aws_profile is not None:
-        args.extend(['--profile', aws_profile])
-
-    # ... CloudFormation deploy command arguments
-    args.extend(['cloudformation', 'deploy', '--stack-name', stack_name, '--template-file', cf_stack_path,
-                 '--capabilities', 'CAPABILITY_NAMED_IAM', '--parameter-overrides'])
+    args = ['cloudformation', 'deploy', '--stack-name', stack_name, '--template-file', cf_stack_path,
+                 '--capabilities', 'CAPABILITY_NAMED_IAM', '--parameter-overrides']
 
     # Define CloudFormation parameters values
     param_overrides = {
@@ -130,15 +123,38 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
 
     # Run deploy command
     logger.info("Deploying CloudFormation stack")
-    run_res = subprocess.run(args)
+
+    run_res = exec_aws(args, aws_profile)
 
     # Check if deploy successful
     if run_res.returncode != 0:
         # If not successful display events
         logger.info("Failed to deploy CloudFormation stack")
-        subprocess.run(['aws', 'cloudformation', 'describe-stack-events', '--stack-name', stack_name])
+
+        args = ['cloudformation', 'describe-stack-events', '--stack-name', stack_name]
+
+        exec_aws(args, aws_profile)
     else:
         logger.info("Deployed CloudFormation stack")
+
+
+def exec_aws(cmd_args: List[str], aws_profile: str = None) -> subprocess.CompletedProcess:
+    """ Executes an AWS CLI command
+    Args:
+        - cmd_args: AWS command arguments
+
+    Returns: Command result
+    """
+    args = ['aws']
+
+    # If custom aws profile specified
+    if aws_profile is not None:
+        args.extend(['--profile', aws_profile])
+
+    # Execute
+    args.extend(cmd_args)
+    return subprocess.run(args)
+
 
 def upload_artifacts(logger: logging.Logger, s3, artifact_names: Dict[str, str], stack_name: str,
                      code_bucket: str) -> Dict[str, str]:
