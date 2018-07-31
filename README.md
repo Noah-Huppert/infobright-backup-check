@@ -88,6 +88,12 @@ Creates a test volume from the Infobright data snapshot.
 
 File: `ib_backup/step_create_volume.py`  
 
+Environment variables:
+
+- `NEXT_LAMBDA_NAME`: Name of the lambda to invoke once the current one is completed
+
+Expected context: None
+
 Actions:
 
 - Create a volume from the Infobright data snapshot
@@ -97,6 +103,14 @@ Actions:
 Waits until the test volume has been created.  
 
 File: `ib_backup/step_wait_volume_created.py`  
+
+Environment variables:
+
+- `WAIT_QUEUE_ARN`: ARN of SQS wait queue
+
+Expected context: 
+
+- `volume_id`: Id of volume to wait for
 
 Actions:
 

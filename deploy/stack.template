@@ -101,7 +101,7 @@
         },
 
         "StepCreateVolumeLambda": {
-            "DependsOn": "StepLambdaExecRole",
+            "DependsOn": [ "StepLambdaExecRole", "StepWaitVolumeCreatedLambda" ],
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
@@ -115,6 +115,11 @@
                     "S3Key": { "Ref": "StepCreateVolumeCodeKey" }
                 },
                 "Handler": "step_create_volume.main",
+                "Environment": {
+                    "Variables": {
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepWaitVolumeCreatedLambda" }
+                    }
+                },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6"
             }

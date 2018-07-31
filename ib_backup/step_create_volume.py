@@ -4,6 +4,7 @@ import sys
 import datetime
 
 import lib.log
+import lib.aws_lambda
 
 import boto3
 
@@ -24,6 +25,13 @@ def main(event=None, ctx=None) -> int:
     Returns:
         - Exit code
     """
+    # Get name of the lambda we will invoke at the end of this one
+    next_lambda_name = os.environ.get("NEXT_LAMBDA_NAME", None)
+    if next_lambda_name is None:
+        logger.error("NEXT_LAMBDA_NAME environment variable must be set")
+        return 1
+
+    # AWS clients
     ec2 = boto3.client('ec2')
 
     # Find production Infobright backup instance
@@ -108,7 +116,7 @@ def main(event=None, ctx=None) -> int:
                  "VolumeId={}".format(created_volume_id))
 
     # Invoke next lambda
-    logger.debug("This is where I would invoke the next lambda")
+    lib.aws_lambda.invoke_lambda(next_lambda_name, { 'volume_id': created_volume_id })
 
     return 0
 
