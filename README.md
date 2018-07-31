@@ -4,6 +4,8 @@ Infobright backup.
 # Table Of Contents
 - [Overview](#overview)
 - [Process](#process)
+    - [Existing Functionality](#existing-functionality)
+    - [New Functionality](#new-functionality)
 - [Infrastructure](#infrastructure)
 - [Development](#development)
 
@@ -84,6 +86,8 @@ execute these steps.
 ### Create Test Volume
 Creates a test volume from the Infobright data snapshot.  
 
+File: `ib_backup/step_create_volume.py`  
+
 Actions:
 
 - Create a volume from the Infobright data snapshot
@@ -91,6 +95,8 @@ Actions:
 
 ### Wait Test Volume Created
 Waits until the test volume has been created.  
+
+File: `ib_backup/step_wait_volume_created.py`  
 
 Actions:
 
