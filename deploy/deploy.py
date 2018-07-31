@@ -46,6 +46,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Deploy script")
     parser.add_argument('--aws-profile',
                         help="AWS credential profile")
+    parser.add_argument('--env',
+                        choices=['sand', 'dev', 'prod'],
+                        default='dev',
+                        help="Environment stack is being deployed to")
     parser.add_argument('--stack-name',
                         help="Name of CloudFormation stack to deploy",
                         default='ib-backup')
@@ -73,18 +77,19 @@ def main() -> int:
                                          code_bucket=args.code_bucket)
 
     # Deploy CloudFormation stack
-    deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys,
+    deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
                                 stack_name=args.stack_name, code_bucket=args.code_bucket, aws_profile=args.aws_profile)
 
     return 0
 
 
-def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[str, str],
+def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[str, str], env: str,
                                 stack_name: str, code_bucket: str, aws_profile: str = None):
     """ Deploys a CloudFormation stack
     Args:
         - logger
         - artifact_s3_keys: Location of all lambda deployment artifacts in S3, output of upload_artifacts()
+        - env: Name of environment stack is being deployed to
         - stack_name: Name of CloudFormation stack to deploy
         - code_bucket: Name of bucket Lambda deployment artifacts were stored in
         - aws_profile: Name of aws credentials profile, None if default credentials should be used
@@ -95,6 +100,7 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
 
     # Define CloudFormation parameters values
     param_overrides = {
+        'Environment': env,
         'ProcessName': stack_name,
         'StepLambdaCodeBucket': code_bucket
     }

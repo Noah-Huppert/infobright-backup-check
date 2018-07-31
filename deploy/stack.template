@@ -2,6 +2,11 @@
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Infobright volume backup process with end to end testing",
     "Parameters": {
+        "Environment": {
+            "Type": "String",
+            "AllowedValues": [ "sand", "dev", "prod" ],
+            "Description": "Environment stack is being deployed to"
+        },
         "ProcessName": {
             "Type": "String",
             "Default": "ib-backup",
@@ -35,6 +40,7 @@
             "Type": "AWS::Events::Rule",
             "Properties": {
                 "Name": { "Fn::Join": [ "-", [ 
+                    { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
                     "start-trigger"
                 ] ] },
@@ -43,10 +49,23 @@
             }
         },
 
+        "WaitQueue": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "wait-queue"
+                ] ] },
+                "DelaySeconds": 60
+            }
+        },
+
         "StepLambdaExecRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "RoleName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
                     "step-lambda-execution-role"
                 ] ] },
@@ -86,6 +105,7 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
                     "step-create-volume"
                 ] ] },
@@ -95,12 +115,6 @@
                     "S3Key": { "Ref": "StepCreateVolumeCodeKey" }
                 },
                 "Handler": "step_create_volume.main",
-                "Environment": {
-                    "Variables": {
-                        "SALT_API_USER": { "Ref": "SaltAPIUser" },
-                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
-                    }
-                },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6"
             }
@@ -111,6 +125,7 @@
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
                     "step-wait-volume-created"
                 ] ] },
@@ -122,8 +137,7 @@
                 "Handler": "step_create_volume.main",
                 "Environment": {
                     "Variables": {
-                        "SALT_API_USER": { "Ref": "SaltAPIUser" },
-                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
+                        "WAIT_QUEUE_ARN": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] }
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
