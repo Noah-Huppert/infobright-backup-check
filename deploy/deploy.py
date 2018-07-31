@@ -25,7 +25,7 @@ lib_dir = src_dir + 'lib'  # Directory containing common code between lambdas
 cf_stack_path = 'stack.template'  # Path to CloudFormation stack template
 
 # Step constants
-steps = [ 'step_create_volume' ]  # Names of process steps
+steps = [ 'step_create_volume', 'step_wait_volume_created' ]  # Names of process steps
 
 
 def main() -> int:
