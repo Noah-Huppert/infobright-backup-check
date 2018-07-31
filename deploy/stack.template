@@ -56,8 +56,23 @@
                         "Action": [ "sts:AssumeRole" ]
                     } ]
                 },
+                "Policies": [ {
+                    "PolicyName": "CreateSnapshotTestVolumes",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [ {
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:CreateVolume",
+                                "ec2:CreateTags"
+                            ],
+                            "Resource": "*"
+                        } ]
+                    }
+                } ],
                 "ManagedPolicyArns": [
-                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+                    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
                 ]
             }
         },
