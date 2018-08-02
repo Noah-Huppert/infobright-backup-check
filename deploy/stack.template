@@ -70,26 +70,13 @@
             }
         },
 
-        "WaitQueueTrigger": {
-            "DependsOn": [ "WaitQueue", "StepWaitVolumeCreatedLambda" ],
-            "Type": "AWS::Events::Rule",
+        "StepWaitVolumeCreatedEventSource": {
+            "DependsOn": "StepWaitVolumeCreatedLambda",
+            "Type": "AWS::Lambda::EventSourceMapping",
             "Properties": {
-                "Name": { "Fn::Join": [ "-", [
-                    { "Ref": "Environment" },
-                    { "Ref": "ProcessName" },
-                    "wait-queue-trigger"
-                ] ] },
-                "Description": "Triggers Infobright backup test \"wait\" lambda functions when messages are sent to the wait SQS queue",
-                "EventPattern": {
-                    "source": [ "aws.sqs" ],
-                    "detail": {
-                        "queueUrl": [ { "Ref": "WaitQueue" } ]
-                    }
-                },
-                "Targets": [ {
-                    "Id": "StepWaitVolumeCreatedLambda",
-                    "Arn": { "Fn::GetAtt": [ "StepWaitVolumeCreatedLambda", "Arn" ] }
-                } ]
+                "BatchSize": 1,
+                "EventSourceArn": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] },
+                "FunctionName": { "Ref": "StepWaitVolumeCreatedLambda" }
             }
         },
 
@@ -128,13 +115,16 @@
                         }
                     },
                     {
-                        "PolicyName": "SendSQSWaitQueueMessages",
+                        "PolicyName": "UseSQSWaitQueue",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
                             "Statement": [ {
                                 "Effect": "Allow",
                                 "Action": [
-                                    "sqs:SendMessage"
+                                    "sqs:SendMessage",
+                                    "sqs:ReceiveMessage",
+                                    "sqs:DeleteMessage",
+                                    "sqs:GetQueueAttributes"
                                 ],
                                 "Resource": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] }
                             } ]
