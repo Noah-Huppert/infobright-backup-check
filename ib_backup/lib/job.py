@@ -1,8 +1,24 @@
 import os
+import json
 from enum import Enum
 from typing import Dict
 
+import lib.log
+
 import boto3
+
+
+class NextAction(Enum):
+        """ Indicates what should happen after the `handle` method completes
+        Fields:
+            - TERMINATE (int): Do nothing
+            - NEXT (int): Invoke the lambda specified by the `next_lambda_name` field
+            - REPEAT (int): Send a message to the wait SQS queue specified by the `wait_queue_url` to re-invoke this
+                same lambda
+        """
+        TERMINATE = 1
+        NEXT = 2
+        REPEAT = 3
 
 
 class Job:
@@ -42,24 +58,13 @@ class Job:
             can repeat before being considered repeating infinitely
         - logger (logging.Logger): Logger for lambda
     """
-
-    class NextAction(Enum):
-        """ Indicates what should happen after the `handle` method completes
-        Fields:
-            - TERMINATE (int): Do nothing
-            - NEXT (int): Invoke the lambda specified by the `next_lambda_name` field
-            - REPEAT (int): Send a message to the wait SQS queue specified by the `wait_queue_url` to re-invoke this
-                same lambda
-        """
-        TERMINATE = 1
-        NEXT = 2
-        REPEAT = 3
-
     def __init__(self, lambda_name: str, next_lambda_name: str = None, wait_queue_url: str = None,
                  max_iteration_count: int = 3):
         """ Creates a Job instance and runs the `handle` method
         Args:
             - See class fields
+            - If next_lambda_name is not specified will attempt to load a value from the NEXT_LAMBDA_NAME environment
+                variable
             - If wait_queue_url is not specified will attempt to load a value from the WAIT_QUEUE_URL environment
                 variable
 
@@ -69,17 +74,24 @@ class Job:
         # Initialize fields
         self.lambda_name = lambda_name
 
+        if not self.lambda_name:
+            raise ValueError("lambda_name field was not provided")
+
         self.next_lambda_name = next_lambda_name
+
+        if not self.next_lambda_name:
+            self.next_lambda_name = os.environ.get("NEXT_LAMBDA_NAME", None)
+
         self.next_lambda_event = None
 
         self.wait_queue_url = wait_queue_url
-        self.max_iteration_count = max_iteration_count
 
-        if self.wait_queue_url is None:
+        if not self.wait_queue_url:
             self.wait_queue_url = os.environ.get("WAIT_QUEUE_URL", None)
 
-        if self.lambda_name is None or len(self.lambda_name) == 0:
-            raise ValueError("lambda_name field was not provided")
+        self.max_iteration_count = max_iteration_count
+
+        self.logger = lib.log.get_logger(self.lambda_name)
 
 
     def run(self, event: Dict[str, object], ctx: Dict[str, object]):
@@ -92,6 +104,8 @@ class Job:
 
         Raises: Any exception on any failure
         """
+        iteration_count = 0
+
         # If invoked by sqs wait queue
         if 'target_lambda' in event:
             target_lambda = event['target_lambda']
@@ -110,15 +124,25 @@ class Job:
                 raise ValueError("Lambda max iteration count reached: {}".format(iteration_count))
 
         # Invoke handle method
+        self.logger.debug("Invoked, event={}".format(event))
+
         next_action = self.handle(event, ctx)
 
         # Handle return value
         if next_action == NextAction.TERMINATE:  # Do nothing after lambda is finished
+            self.logger.debug("Handle finished, next action=TERMINATE")
             return
         elif next_action == NextAction.NEXT:  # Invoke the lambda specified by the `next_lambda_name` class field
             # Check `next_lambda_name` provided
-            if self.next_lambda_name is None or len(next_lambda_name) == 0:
+            if not self.next_lambda_name:
                 raise ValueError("Job.handle returned NextAction.NEXT but the Job.next_lambda_name field was not set")
+
+            # Check `next_lambda_event` provided
+            if not self.next_lambda_event:
+                raise ValueError("Job.handle returned NextAction.NEXT but the job.next_lambda_event field was not set")
+
+            self.logger.debug("Handle finished, next action=NEXT, next_lambda_name={}, next_lambda_event={}"
+                              .format(self.next_lambda_name, self.next_lambda_event))
 
             # Invoke
             lambda_client = boto3.client('lambda')
@@ -128,15 +152,17 @@ class Job:
                                  Payload=json.dumps(self.next_lambda_event))
         elif next_action == NextAction.REPEAT:  # Invoke this lambda again
             # Check `wait_queue_url` is provided
-            if self.wait_queue_url is None or len(self.wait_queue_url) == 0:
+            if not self.wait_queue_url:
                 raise ValueError("Job.handle returned NextAction.REPEAT but the Job.wait_queue_url field was not set")
 
             # Add msg to wait queue to invoke lambda again in the future
             queue_event = {
-                'target_lambda': target_lambda,
-                'iteration_count': iteration_count
+                'target_lambda': self.lambda_name,
+                'iteration_count': iteration_count + 1
             }
             queue_event_str = json.dumps(queue_event)
+
+            self.logger.debug("Handle finished, next action=REPEAT, event={}".format(queue_event))
 
             sqs.send_message(
                 QueueUrl=wait_queue_url,
