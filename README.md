@@ -106,7 +106,7 @@ File: `ib_backup/step_wait_volume_created.py`
 
 Environment variables:
 
-- `WAIT_QUEUE_ARN`: ARN of SQS wait queue
+- `WAIT_QUEUE_URL`: AWS URL of SQS wait queue
 
 Expected context: 
 

@@ -11,5 +11,4 @@ def invoke_lambda(function_name: str, data: Dict[str, object]):
     """
     lambda_client = boto3.client('lambda')
 
-    resp = lambda_client.invoke(FunctionName=function_name, InvocationType='Event', LogType='Trail',
-                                Payload=json.dumps(data))
+    resp = lambda_client.invoke(FunctionName=function_name, InvocationType='Event', Payload=json.dumps(data))

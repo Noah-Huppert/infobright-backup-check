@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-import sys
+import os
 import datetime
 
+import lib.steps
 import lib.log
 import lib.aws_lambda
 
@@ -13,23 +14,21 @@ PROD_IB_BACKUP_NAME = 'ib-backup.us-east-1.code418.net'
 PROD_IB_BACKUP_DATA_VOLUME_NAME = '/dev/sdg'
 
 # Setup logger
-logger = lib.log.get_logger("step_create_volume")
+logger = lib.log.get_logger(lib.steps.STEP_CREATE_VOLUME)
 
 
-def main(event=None, ctx=None) -> int:
+def main(event=None, ctx=None):
     """ Lambda function handler
     Args:
         - event: AWS event which triggered Lambda function
         - ctx: Invocation information
 
-    Returns:
-        - Exit code
+    Raises: Any exception
     """
     # Get name of the lambda we will invoke at the end of this one
     next_lambda_name = os.environ.get("NEXT_LAMBDA_NAME", None)
     if next_lambda_name is None:
-        logger.error("NEXT_LAMBDA_NAME environment variable must be set")
-        return 1
+        raise KeyError("NEXT_LAMBDA_NAME environment variable must be set")
 
     # AWS clients
     ec2 = boto3.client('ec2')
@@ -43,8 +42,7 @@ def main(event=None, ctx=None) -> int:
     instances_rs = instances_resp['Reservations']
 
     if len(instances_rs) == 0:
-           logger.error("Could not find production Infobright backup instance")
-           return 1
+           raise ValueError("Could not find production Infobright backup instance")
 
     instance = instances_rs[0]['Instances'][0]
 
@@ -60,9 +58,8 @@ def main(event=None, ctx=None) -> int:
             volume_id = dev_mapping['Ebs']['VolumeId']
 
     if volume_id is None:
-        logger.error("Could not find data volume \"{}\" attached to production Infobright backup instance".format(
+        raise ValueError("Could not find data volume \"{}\" attached to production Infobright backup instance".format(
                      PROD_IB_BACKUP_DATA_VOLUME_NAME))
-        return 1
 
     logger.debug("Found production backup Infobright instance data volume, VolumeId={}".format(volume_id))
 
@@ -87,8 +84,7 @@ def main(event=None, ctx=None) -> int:
                 newest_snapshot = snapshot
 
     if newest_snapshot is None:
-        logger.error("No snapshot for volume \"{}\" found".format(volume_id))
-        return 1
+        raise ValueError("No snapshot for volume \"{}\" found".format(volume_id))
 
     snapshot_size = newest_snapshot['VolumeSize']
     snapshot_id = newest_snapshot['SnapshotId']
@@ -116,10 +112,10 @@ def main(event=None, ctx=None) -> int:
                  "VolumeId={}".format(created_volume_id))
 
     # Invoke next lambda
-    lib.aws_lambda.invoke_lambda(next_lambda_name, { 'volume_id': created_volume_id })
+    logger.debug("Invoking next step: {}".format(next_lambda_name))
 
-    return 0
+    lib.aws_lambda.invoke_lambda(next_lambda_name, { 'volume_id': created_volume_id })
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

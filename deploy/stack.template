@@ -24,6 +24,10 @@
             "Type": "String",
             "Description": "Location of wait volume created step lambda deployment artifact in code bucket"
         },
+        "StepAttachVolumeCodeKey": {
+            "Type": "String",
+            "Description": "Location of attach volume step lambda deployment artifact in code bucket"
+        },
         "SaltAPIUser": {
             "Type": "String",
             "Default": "ibbackup",
@@ -31,6 +35,7 @@
         },
         "SaltAPIPassword": {
             "Type": "String",
+            "Default": "Not used yet",
             "Description": "Salt API password"
         }
     },
@@ -44,8 +49,12 @@
                     { "Ref": "ProcessName" },
                     "start-trigger"
                 ] ] },
-                "Description": "CloudWatch rule which starts the entire backup process",
-                "ScheduleExpression": "cron(0 0 * * ? *)"
+                "Description": "Starts the Infobright backup test process",
+                "ScheduleExpression": "cron(0 0 * * ? *)",
+                "Targets": [ {
+                    "Id": "StepCreateVolumeLambda",
+                    "Arn": { "Fn::GetAtt": [ "StepCreateVolumeLambda", "Arn" ] }
+                } ]
             }
         },
 
@@ -61,7 +70,31 @@
             }
         },
 
+        "WaitQueueTrigger": {
+            "DependsOn": [ "WaitQueue", "StepWaitVolumeCreatedLambda" ],
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+                "Name": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "wait-queue-trigger"
+                ] ] },
+                "Description": "Triggers Infobright backup test \"wait\" lambda functions when messages are sent to the wait SQS queue",
+                "EventPattern": {
+                    "source": [ "aws.sqs" ],
+                    "detail": {
+                        "queueUrl": [ { "Ref": "WaitQueue" } ]
+                    }
+                },
+                "Targets": [ {
+                    "Id": "StepWaitVolumeCreatedLambda",
+                    "Arn": { "Fn::GetAtt": [ "StepWaitVolumeCreatedLambda", "Arn" ] }
+                } ]
+            }
+        },
+
         "StepLambdaExecRole": {
+            "DependsOn": "WaitQueue",
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "RoleName": { "Fn::Join": [ "-", [
@@ -79,23 +112,39 @@
                         "Action": [ "sts:AssumeRole" ]
                     } ]
                 },
-                "Policies": [ {
-                    "PolicyName": "CreateSnapshotTestVolumes",
-                    "PolicyDocument": {
-                        "Version": "2012-10-17",
-                        "Statement": [ {
-                            "Effect": "Allow",
-                            "Action": [
-                                "ec2:CreateVolume",
-                                "ec2:CreateTags"
-                            ],
-                            "Resource": "*"
-                        } ]
+                "Policies": [
+                    {
+                        "PolicyName": "CreateSnapshotTestVolumes",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [ {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "ec2:CreateVolume",
+                                    "ec2:CreateTags"
+                                ],
+                                "Resource": "*"
+                            } ]
+                        }
+                    },
+                    {
+                        "PolicyName": "SendSQSWaitQueueMessages",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [ {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "sqs:SendMessage"
+                                ],
+                                "Resource": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] }
+                            } ]
+                        }
                     }
-                } ],
+                ],
                 "ManagedPolicyArns": [
                     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-                    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+                    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaRole"
                 ]
             }
         },
@@ -139,12 +188,33 @@
                     "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
                     "S3Key": { "Ref": "StepWaitVolumeCreatedCodeKey" }
                 },
-                "Handler": "step_create_volume.main",
+                "Handler": "step_wait_volume_created.main",
                 "Environment": {
                     "Variables": {
-                        "WAIT_QUEUE_ARN": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] }
+                        "WAIT_QUEUE_URL": { "Ref": "WaitQueue" },
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepAttachVolumeLambda" }
                     }
                 },
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6"
+            }
+        },
+
+        "StepAttachVolumeLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "step-attach-volume"
+                ] ] },
+                "Description": "Attached the ib snapshot test volume to ib02 in development",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepAttachVolumeCodeKey" }
+                },
+                "Handler": "step_attach_volume.main",
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6"
             }

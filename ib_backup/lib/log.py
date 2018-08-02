@@ -20,4 +20,6 @@ def get_logger(name: str) -> logging.Logger:
 
     logger.addHandler(hndlr)
 
+    logger.propagate = False  # To prevent messages from being logger by this logger and the AWS Lambda root logger
+
     return logger
