@@ -36,6 +36,11 @@
             "Type": "String",
             "Description": "Location of the test backup step lambda deployment artifact in code bucket"
         },
+        "SaltAPIURL": {
+            "Type": "String",
+            "Default": "http://salt01.dev.code418.net:6503",
+            "Description": "URL of Salt API"
+        },
         "SaltAPIUser": {
             "Type": "String",
             "Default": "ibbackup",
@@ -228,6 +233,7 @@
                 "Handler": "step_test_backup.main",
                 "Environment": {
                     "Variables": {
+                        "SALT_API_URL": { "Ref": "SaltAPIURL" },
                         "SALT_API_USER": { "Ref": "SaltAPIUser" },
                         "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
                     }

@@ -34,11 +34,9 @@ def get_auth_token(host: str, username: str, password: str) -> str:
     resp_body = resp.json()
     print(resp_body)
 
-    if 'return' not in resp_body or\
-            len(resp_body['return']) != 1:
+    if 'return' not in resp_body or len(resp_body['return']) != 1:
         raise ValueError("Malformed Salt auth API response, expected 'return' key containing an array with 1 entry" +
                          ", was: {}".format(resp_body))
-        return 1
 
     return resp_body['return'][0]['token']
 
