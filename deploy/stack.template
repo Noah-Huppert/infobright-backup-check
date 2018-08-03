@@ -134,7 +134,7 @@
         },
 
         "StepWaitVolumeCreatedLambda": {
-            "DependsOn": "StepLambdaExecRole",
+            "DependsOn": [ "StepLambdaExecRole", "StepAttachVolumeLambda" ],
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
@@ -160,7 +160,7 @@
         },
 
         "StepAttachVolumeLambda": {
-            "DependsOn": "StepLambdaExecRole",
+            "DependsOn": [ "StepLambdaExecRole", "StepWaitVolumeAttachedLambda" ],
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
@@ -186,7 +186,7 @@
         },
 
         "StepWaitVolumeAttachedLambda": {
-            "DependsOn": "StepLambdaExecRole",
+            "DependsOn": [ "StepLambdaExecRole", "StepTestBackupLambda" ],
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
@@ -226,6 +226,12 @@
                     "S3Key": { "Ref": "StepTestBackupCodeKey" }
                 },
                 "Handler": "step_test_backup.main",
+                "Environment": {
+                    "Variables": {
+                        "SALT_API_USER": { "Ref": "SaltAPIUser" },
+                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
+                    }
+                },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
                 "Timeout": "5"
