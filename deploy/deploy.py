@@ -53,7 +53,7 @@ def main() -> int:
                         default='dev',
                         help="Environment stack is being deployed to")
     parser.add_argument('--stack-name',
-                        help="Name of CloudFormation stack to deploy",
+                        help="Base name of CloudFormation stack to deploy, will be prefixed with the environment",
                         default='ib-backup')
     parser.add_argument('--code-bucket',
                         help="S3 bucket to upload code into",
@@ -70,17 +70,19 @@ def main() -> int:
 
     s3 = aws_profile.client('s3')
 
+    # Stack name
+    stack_name = "{}-{}".format(args.env, args.stack_name)
 
     # Build artifacts
     artifact_names = build_artifacts(logger)
 
     # Upload artifacts
-    artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=args.stack_name,
+    artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
                                          code_bucket=args.code_bucket)
 
     # Deploy CloudFormation stack
     deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
-                                stack_name=args.stack_name, code_bucket=args.code_bucket, aws_profile=args.aws_profile)
+                                stack_name=stack_name, code_bucket=args.code_bucket, aws_profile=args.aws_profile)
 
     return 0
 

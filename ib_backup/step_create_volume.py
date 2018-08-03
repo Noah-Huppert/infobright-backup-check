@@ -29,6 +29,9 @@ class CreateVolumeJob(lib.job.Job):
 
         self.logger.debug("Found production backup Infobright instance, InstanceId={}".format(instance['InstanceId']))
 
+        # Get availability zone of instance
+        instance_az = instance['Placement']['AvailabilityZone']
+
         # Get id of Infobright data volume
         instance_dev_mappings = instance['BlockDeviceMappings']
 
@@ -75,7 +78,8 @@ class CreateVolumeJob(lib.job.Job):
 
         # Create test volume from snapshot
         test_volume_name = "test-ib-snapshot-{}".format(snapshot_id)
-        create_volume_resp = ec2.create_volume(AvailabilityZone='us-east-1a', SnapshotId=snapshot_id, Size=snapshot_size,
+        create_volume_resp = ec2.create_volume(AvailabilityZone=instance_az,
+                                               SnapshotId=snapshot_id, Size=snapshot_size,
                                                VolumeType='gp2',
                                                TagSpecifications=[{
                                                    'ResourceType': 'volume',

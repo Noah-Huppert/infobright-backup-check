@@ -68,6 +68,8 @@ class WaitVolumeAttachedStep(lib.job.Job):
 
             return lib.job.NextAction.NEXT
         else:  # Still attaching
+            self.logger.debug("volume still attaching")
+
             return lib.job.NextAction.REPEAT
 
 

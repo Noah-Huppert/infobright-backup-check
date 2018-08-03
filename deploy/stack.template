@@ -66,50 +66,7 @@
             }
         },
 
-        "WaitQueue": {
-            "Type": "AWS::SQS::Queue",
-            "Properties": {
-                "QueueName": { "Fn::Join": [ "-", [
-                    { "Ref": "Environment" },
-                    { "Ref": "ProcessName" },
-                    "wait-queue.fifo"
-                ] ] },
-                "ContentBasedDeduplication": true,
-                "DelaySeconds": 60,
-                "FifoQueue": true
-            }
-        },
-
-        "WaitQueueTrigger": {
-            "DependsOn": "WaitQueue",
-            "Type": "AWS::Events::Rule",
-            "Properties": {
-                "Name": { "Fn::Join": [ "-", [ 
-                    { "Ref": "Environment" },
-                    { "Ref": "ProcessName" },
-                    "wait-queue-trigger"
-                ] ] },
-                "Description": "Invokes ib backup wait lambdas when a message is sent to the wait queue",
-                "EventPattern": {
-                    "detail": {
-                        "queueUrl": [ { "Ref": "WaitQueue" } ]
-                    }
-                },
-                "Targets": [
-                    {
-                        "Id": "StepWaitVolumeCreatedLambda",
-                        "Arn": { "Fn::GetAtt": [ "StepWaitVolumeCreatedLambda", "Arn" ] }
-                    },
-                    {
-                        "Id": "StepWaitVolumeAttachedLambda",
-                        "Arn": { "Fn::GetAtt": [ "StepWaitVolumeAttachedLambda", "Arn" ] }
-                    }
-                ]
-            }
-        },
-
         "StepLambdaExecRole": {
-            "DependsOn": "WaitQueue",
             "Type": "AWS::IAM::Role",
             "Properties": {
                 "RoleName": { "Fn::Join": [ "-", [
@@ -127,8 +84,7 @@
                         "Action": [ "sts:AssumeRole" ]
                     } ]
                 },
-                "Policies": [
-                    {
+                "Policies": [ {
                         "PolicyName": "CreateSnapshotTestVolumes",
                         "PolicyDocument": {
                             "Version": "2012-10-17",
@@ -136,29 +92,13 @@
                                 "Effect": "Allow",
                                 "Action": [
                                     "ec2:CreateVolume",
-                                    "ec2:CreateTags"
+                                    "ec2:CreateTags",
+                                    "ec2:AttachVolume"
                                 ],
                                 "Resource": "*"
                             } ]
                         }
-                    },
-                    {
-                        "PolicyName": "UseSQSWaitQueue",
-                        "PolicyDocument": {
-                            "Version": "2012-10-17",
-                            "Statement": [ {
-                                "Effect": "Allow",
-                                "Action": [
-                                    "sqs:SendMessage",
-                                    "sqs:ReceiveMessage",
-                                    "sqs:DeleteMessage",
-                                    "sqs:GetQueueAttributes"
-                                ],
-                                "Resource": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] }
-                            } ]
-                        }
-                    }
-                ],
+                } ],
                 "ManagedPolicyArns": [
                     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
                     "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
@@ -210,13 +150,12 @@
                 "Handler": "step_wait_volume_created.main",
                 "Environment": {
                     "Variables": {
-                        "WAIT_QUEUE_URL": { "Ref": "WaitQueue" },
                         "NEXT_LAMBDA_NAME": { "Ref": "StepAttachVolumeLambda" }
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
-                "Timeout": "5"
+                "Timeout": "120"
             }
         },
 
@@ -263,13 +202,12 @@
                 "Handler": "step_wait_volume_attached.main",
                 "Environment": {
                     "Variables": {
-                        "WAIT_QUEUE_URL": { "Ref": "WaitQueue" },
                         "NEXT_LAMBDA_NAME": { "Ref": "StepTestBackupLambda" }
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
-                "Timeout": "5"
+                "Timeout": "120"
             }
         },
 
