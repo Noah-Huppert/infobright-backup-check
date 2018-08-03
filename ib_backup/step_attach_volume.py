@@ -10,7 +10,7 @@ import boto3
 
 # Constants
 DEV_IB_BACKUP_NAME = 'ib02.dev.code418.net'
-DEV_IB_BACKUP_ATTACH_DEV_NAME = '/dev/sdh'
+DEV_IB_BACKUP_ATTACH_DEV_NAME = '/dev/sdg'
 
 
 class AttachVolumeJob(lib.job.Job):
