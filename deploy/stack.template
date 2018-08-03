@@ -28,6 +28,14 @@
             "Type": "String",
             "Description": "Location of attach volume step lambda deployment artifact in code bucket"
         },
+        "StepWaitVolumeAttachedCodeKey": {
+            "Type": "String",
+            "Description": "Location of wait volume attached step lambda deployment artifact in code bucket"
+        },
+        "StepTestBackupCodeKey": {
+            "Type": "String",
+            "Description": "Location of the test backup step lambda deployment artifact in code bucket"
+        },
         "SaltAPIUser": {
             "Type": "String",
             "Default": "ibbackup",
@@ -64,19 +72,39 @@
                 "QueueName": { "Fn::Join": [ "-", [
                     { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
-                    "wait-queue"
+                    "wait-queue.fifo"
                 ] ] },
-                "DelaySeconds": 60
+                "ContentBasedDeduplication": true,
+                "DelaySeconds": 60,
+                "FifoQueue": true
             }
         },
 
-        "StepWaitVolumeCreatedEventSource": {
-            "DependsOn": "StepWaitVolumeCreatedLambda",
-            "Type": "AWS::Lambda::EventSourceMapping",
+        "WaitQueueTrigger": {
+            "DependsOn": "WaitQueue",
+            "Type": "AWS::Events::Rule",
             "Properties": {
-                "BatchSize": 1,
-                "EventSourceArn": { "Fn::GetAtt": [ "WaitQueue", "Arn" ] },
-                "FunctionName": { "Ref": "StepWaitVolumeCreatedLambda" }
+                "Name": { "Fn::Join": [ "-", [ 
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "wait-queue-trigger"
+                ] ] },
+                "Description": "Invokes ib backup wait lambdas when a message is sent to the wait queue",
+                "EventPattern": {
+                    "detail": {
+                        "queueUrl": [ { "Ref": "WaitQueue" } ]
+                    }
+                },
+                "Targets": [
+                    {
+                        "Id": "StepWaitVolumeCreatedLambda",
+                        "Arn": { "Fn::GetAtt": [ "StepWaitVolumeCreatedLambda", "Arn" ] }
+                    },
+                    {
+                        "Id": "StepWaitVolumeAttachedLambda",
+                        "Arn": { "Fn::GetAtt": [ "StepWaitVolumeAttachedLambda", "Arn" ] }
+                    }
+                ]
             }
         },
 
@@ -146,7 +174,7 @@
                 "FunctionName": { "Fn::Join": [ "-", [
                     { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
-                    "step-create-volume"
+                    "step-1-create-volume"
                 ] ] },
                 "Description": "Creates a volume to test the IB snapshot",
                 "Code": {
@@ -160,7 +188,8 @@
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
-                "Runtime": "python3.6"
+                "Runtime": "python3.6",
+                "Timeout": "5"
             }
         },
 
@@ -171,7 +200,7 @@
                 "FunctionName": { "Fn::Join": [ "-", [
                     { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
-                    "step-wait-volume-created"
+                    "step-2-wait-volume-created"
                 ] ] },
                 "Description": "Waits for the ib snapshot test volume to be created",
                 "Code": {
@@ -186,7 +215,8 @@
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
-                "Runtime": "python3.6"
+                "Runtime": "python3.6",
+                "Timeout": "5"
             }
         },
 
@@ -197,7 +227,7 @@
                 "FunctionName": { "Fn::Join": [ "-", [
                     { "Ref": "Environment" },
                     { "Ref": "ProcessName" },
-                    "step-attach-volume"
+                    "step-3-attach-volume"
                 ] ] },
                 "Description": "Attached the ib snapshot test volume to ib02 in development",
                 "Code": {
@@ -205,8 +235,62 @@
                     "S3Key": { "Ref": "StepAttachVolumeCodeKey" }
                 },
                 "Handler": "step_attach_volume.main",
+                "Environment": {
+                    "Variables": {
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepWaitVolumeAttachedLambda" }
+                    }
+                },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
-                "Runtime": "python3.6"
+                "Runtime": "python3.6",
+                "Timeout": "5"
+            }
+        },
+
+        "StepWaitVolumeAttachedLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "step-4-wait-volume-attached"
+                ] ] },
+                "Description": "Waits for the test volume to be attached to ib02 in dev",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitVolumeAttachedCodeKey" }
+                },
+                "Handler": "step_wait_volume_attached.main",
+                "Environment": {
+                    "Variables": {
+                        "WAIT_QUEUE_URL": { "Ref": "WaitQueue" },
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepTestBackupLambda" }
+                    }
+                },
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6",
+                "Timeout": "5"
+            }
+        },
+
+        "StepTestBackupLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "step-5-test-backup"
+                ] ] },
+                "Description": "Tests the Infobright backup on ib02 in dev",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepTestBackupCodeKey" }
+                },
+                "Handler": "step_test_backup.main",
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6",
+                "Timeout": "5"
             }
         }
     }

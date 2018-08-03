@@ -7,6 +7,7 @@ from typing import Dict
 
 import lib.steps
 import lib.job
+import lib.aws_ec2
 
 import boto3
 
@@ -19,22 +20,12 @@ class CreateVolumeJob(lib.job.Job):
     """ Performs the create volume step
     """
 
-    def handle(self, event: Dict[str, object], ctx: Dict[str, object]) -> lib.job.NextAction:
+    def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
         # AWS clients
         ec2 = boto3.client('ec2')
 
         # Find production Infobright backup instance
-        instances_resp = ec2.describe_instances(Filters=[{
-            'Name': 'tag:Name',
-            'Values': [ PROD_IB_BACKUP_NAME ]
-        }])
-
-        instances_rs = instances_resp['Reservations']
-
-        if len(instances_rs) == 0:
-               raise ValueError("Could not find production Infobright backup instance")
-
-        instance = instances_rs[0]['Instances'][0]
+        instance = lib.aws_ec2.find_instance_by_name(ec2, PROD_IB_BACKUP_NAME)
 
         self.logger.debug("Found production backup Infobright instance, InstanceId={}".format(instance['InstanceId']))
 
@@ -102,6 +93,7 @@ class CreateVolumeJob(lib.job.Job):
         self.logger.debug("Created test volume from production backup Infobright volume snapshot, " +
                      "VolumeId={}".format(created_volume_id))
 
+        # Invoke next lambda
         self.next_lambda_event = {
             'volume_id': created_volume_id
         }
@@ -109,7 +101,7 @@ class CreateVolumeJob(lib.job.Job):
         return lib.job.NextAction.NEXT
 
 
-def main(event=None, ctx=None):
+def main(event, ctx):
     """ Lambda function handler
     Args:
         - event: AWS event which triggered Lambda function
@@ -119,7 +111,3 @@ def main(event=None, ctx=None):
     """
     step_job = CreateVolumeJob(lambda_name=lib.steps.STEP_CREATE_VOLUME)
     step_job.run(event, ctx)
-
-
-if __name__ == '__main__':
-    main()

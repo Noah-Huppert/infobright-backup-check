@@ -25,7 +25,9 @@ lib_dir = src_dir + 'lib'  # Directory containing common code between lambdas
 cf_stack_path = 'stack.template'  # Path to CloudFormation stack template
 
 # Step constants
-steps = [ 'step_create_volume', 'step_wait_volume_created', 'step_attach_volume' ]  # Names of process steps
+# Names of process steps
+steps = ['step_create_volume', 'step_wait_volume_created', 'step_attach_volume', 'step_wait_volume_attached',
+         'step_test_backup']
 
 
 def main() -> int:
@@ -136,6 +138,8 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
     if run_res.returncode != 0:
         # If not successful display events
         logger.info("Failed to deploy CloudFormation stack")
+        logger.info("NOTE: Displaying Stack events below, these may not contain the problem, please look for any " +
+                    "errors in the output above")
 
         args = ['cloudformation', 'describe-stack-events', '--stack-name', stack_name]
 

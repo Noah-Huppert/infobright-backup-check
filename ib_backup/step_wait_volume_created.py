@@ -13,7 +13,7 @@ class WaitVolumeCreatedJob(lib.job.Job):
     """ Performs the wait volume created step
     """
 
-    def handle(self, event: Dict[str, object], ctx: Dict[str, object]):
+    def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
         # Get volume id from event
         if 'volume_id' not in event:
             raise KeyError("event must contain \"volume_id\" field")
@@ -25,12 +25,7 @@ class WaitVolumeCreatedJob(lib.job.Job):
         sqs = boto3.client('sqs')
 
         # Get status of volume
-        vol_resp = ec2.describe_volumes(
-            Filters=[{
-                'Name': 'volume-id',
-                'Values': [ volume_id ]
-            }]
-        )
+        vol_resp = ec2.describe_volumes(VolumeIds=[ volume_id ])
 
         volumes = vol_resp['Volumes']
         if len(volumes) != 1:
@@ -42,6 +37,7 @@ class WaitVolumeCreatedJob(lib.job.Job):
         if volume['State'] == 'available':
             self.logger.debug("volume is created")
 
+            # Invoke next lambda
             self.next_lambda_event = {
                 'volume_id': volume_id
             }
@@ -63,6 +59,3 @@ def main(event, ctx):
     """
     step_job = WaitVolumeCreatedJob(lambda_name=lib.steps.STEP_WAIT_VOLUME_CREATED)
     step_job.run(event, ctx)
-
-if __name__ == '__main__':
-    main(None, None)

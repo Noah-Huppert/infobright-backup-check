@@ -90,9 +90,9 @@ File: `ib_backup/step_create_volume.py`
 
 Environment variables:
 
-- `NEXT_LAMBDA_NAME`: Name of the lambda to invoke once the current one is completed
+- `NEXT_LAMBDA_NAME`: Name of the [Wait Test Volume Created lambda](#wait-test-volume-created)
 
-Expected context: None
+Expected event: None
 
 Actions:
 
@@ -107,20 +107,29 @@ File: `ib_backup/step_wait_volume_created.py`
 Environment variables:
 
 - `WAIT_QUEUE_URL`: AWS URL of SQS wait queue
+- `NEXT_LAMBDA_NAME`: Name of the [Attach Test Volume lambda](#attach-test-volume)
 
-Expected context: 
+Expected event: 
 
 - `volume_id`: Id of volume to wait for
 
 Actions:
 
 - Check if the test volume has been created
-    - If created: Invoke the [Attach Test Volume step](#attach-test-volume)
+    - If created: Invoke the [Attach Test Volume lambda](#attach-test-volume)
     - If not created: Add a message to the wait SQS queue which will invoke 
         this step again
 
 ### Attach Test Volume
 Attaches the test volume to the development Infobright replica.
+
+Environment variables:
+
+- `NEXT_LAMBDA_NAME`: Name of the [Wait Test Volume Attached lambda](#wait-test-volume-attached)
+
+Expected event:
+
+- `volume_id`: Id of volume to attach
 
 Actions:
 
@@ -129,6 +138,16 @@ Actions:
 
 ### Wait Test Volume Attached
 Waits for the test volume to be attached to the development Infobright replica.  
+
+Environment variables:
+
+- `WAIT_QUEUE_URL`: AWS URL of SQS wait queue
+- `NEXT_LAMBDA_NAME`: Name of the [Test Infobright Backup lambda](#test-infobright-backup)
+
+Expected event:
+
+- `volume_id`: Id of the volume to wait for
+- `instance_id`: If of instance volume is attached to
 
 Actions:
 
@@ -139,6 +158,17 @@ Actions:
 
 ### Test Infobright Backup
 Tests the integrity of the Infobright backup.  
+
+Environment variables:
+
+- `NEXT_LAMBDA_NAME`: Name of the [Wait Test Volume Detached lambda](#wait-test-volume-detached)
+- `SALT_API_USER`: User to authenticate with Salt API
+- `SALT_API_PASSWORD`: Password to authenticate with Salt API
+
+Expected event:
+
+- `volume_id`: Id of snapshot test volume
+- `instance_id`: If of instance volume is attached to
 
 Actions:
 
@@ -156,6 +186,15 @@ Actions:
 ### Wait Test Volume Detached
 Waits until the test volume is detached from the development Infobright replica.  
 
+Environment variables:
+
+- `NEXT_LAMBDA_NAME`: Name of the [Cleanup lambda](#cleanup)
+
+Expected event:
+
+- `volume_id`: Id of test volume to detach
+- `instance_id`: If of instance volume is attached to
+
 Actions:
 
 - Check if the test volume is detached from the `ib02.dev` instance
@@ -165,6 +204,12 @@ Actions:
 
 ### Cleanup
 Deletes the test volume and stops the development Infobright replica.  
+
+Environment variables: None
+
+Expected event:
+
+- `volume_id`: Id of test volume to delete
 
 Actions:
 

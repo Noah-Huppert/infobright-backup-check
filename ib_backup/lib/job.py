@@ -2,6 +2,7 @@ import os
 import json
 from enum import Enum
 from typing import Dict
+import datetime
 
 import lib.log
 
@@ -91,10 +92,10 @@ class Job:
 
         self.max_iteration_count = max_iteration_count
 
-        self.logger = lib.log.get_logger(self.lambda_name)
+        self.logger = lib.log.get_logger("{}-{}".format(self.lambda_name, datetime.datetime.now()))
 
 
-    def run(self, event: Dict[str, object], ctx: Dict[str, object]):
+    def run(self, event: Dict[str, object], ctx):
         """ Invokes the custom `handle` method and performs an action based on the returned NextAction value
         See the NextAction documentation for more details on what actions will be performed for each value.
 
@@ -105,10 +106,27 @@ class Job:
         Raises: Any exception on any failure
         """
         iteration_count = 0
+        lambda_event = None
 
         # If invoked by sqs wait queue
-        if 'target_lambda' in event:
-            target_lambda = event['target_lambda']
+        if 'Records' in event:
+            self.logger.debug("Invoked by SQS message, event={}".format(event))
+
+            # Get first record from message
+            event_records = event['Records']
+            if len(event_records) == 0:
+                raise ValueError("SQS message which triggered lambda had no records: event={}".format(event))
+
+            event_record = event_records['Records']
+
+            # Decode sqs event body
+            event_body = json.loads(event_record['body'])
+
+            if 'target_lambda' not in event_body:
+                raise KeyError("Lambda invoked by sqs queue message but \"target_lambda\" key not provided, event: {}"
+                               .format(event))
+
+            target_lambda = event_body['target_lambda']
 
             # Check target lambda in event is for this job
             if target_lambda != self.lambda_name:
@@ -116,17 +134,28 @@ class Job:
                 return
 
             # Check if max_iteration_count has been reached
-            if 'iteration_count' not in event:
-                raise KeyError("Lambda invoked by sqs queue message but \"iteration_count\" key not provided")
+            if 'iteration_count' not in event_body:
+                raise KeyError("Lambda invoked by sqs queue message but \"iteration_count\" key not provided, " +
+                               "event: {}".format(event))
 
-            iteration_count = event['iteration_count']
+            iteration_count = event_body['iteration_count']
             if iteration_count >= self.max_iteration_count:
                 raise ValueError("Lambda max iteration count reached: {}".format(iteration_count))
 
-        # Invoke handle method
-        self.logger.debug("Invoked, event={}".format(event))
+            # Check if event field is provided in event
+            # This holds the data that the lambda was initially invoked with
+            if 'event' not in event_body:
+                raise KeyError("Lambda invoked by sqs message but \"event\" key not provided, event: {}".format(event))
 
-        next_action = self.handle(event, ctx)
+            lambda_event = event_body['event']
+        else:
+            self.logger.debug("Invoked by Lambda invoke API, event={}".format(event))
+            lambda_event = event
+
+        # Invoke handle method
+        self.logger.debug("Invoking handle, event={}".format(lambda_event))
+
+        next_action = self.handle(lambda_event, ctx)
 
         # Handle return value
         if next_action == NextAction.TERMINATE:  # Do nothing after lambda is finished
@@ -158,21 +187,27 @@ class Job:
             # Add msg to wait queue to invoke lambda again in the future
             queue_event = {
                 'target_lambda': self.lambda_name,
-                'iteration_count': iteration_count + 1
+                'iteration_count': iteration_count + 1,
+                'event': lambda_event
             }
             queue_event_str = json.dumps(queue_event)
 
             self.logger.debug("Handle finished, next action=REPEAT, event={}".format(queue_event))
 
-            sqs.send_message(
-                QueueUrl=wait_queue_url,
-                MessageBody=queue_event_str
+            sqs = boto3.client('sqs')
+
+            sqs_res = sqs.send_message(
+                QueueUrl=self.wait_queue_url,
+                MessageBody=queue_event_str,
+                MessageGroupId='lambda-wait-queue'
             )
+
+            self.logger.debug("Sent SQS message, response={}".format(sqs_res))
         else:
             raise ValueError("Unknown Job.handle return value: {}".format(next_action))
 
 
-    def handle(self, event: Dict[str, object], ctx: Dict[str, object]) -> NextAction:
+    def handle(self, event: Dict[str, object], ctx) -> NextAction:
         """ The code to run when the lambda is invoked.
         Args:
             - event: AWS event which caused lambda to be run
