@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-import os
-import datetime
-
 from typing import Dict
 
 import lib.steps
@@ -42,8 +39,8 @@ class CreateVolumeJob(lib.job.Job):
                 volume_id = dev_mapping['Ebs']['VolumeId']
 
         if volume_id is None:
-            raise ValueError("Could not find data volume \"{}\" attached to production Infobright backup instance".format(
-                         PROD_IB_BACKUP_DATA_VOLUME_NAME))
+            raise ValueError("Could not find data volume \"{}\" attached to production Infobright backup instance"
+                             .format(PROD_IB_BACKUP_DATA_VOLUME_NAME))
 
         self.logger.debug("Found production backup Infobright instance data volume, VolumeId={}".format(volume_id))
 
@@ -51,7 +48,7 @@ class CreateVolumeJob(lib.job.Job):
         snapshot_pager = ec2.get_paginator('describe_snapshots')
         snapshot_resps = snapshot_pager.paginate(Filters=[{
             'Name': 'volume-id',
-            'Values': [ volume_id ]
+            'Values': [volume_id]
         }])
 
         newest_date = None
@@ -95,7 +92,7 @@ class CreateVolumeJob(lib.job.Job):
         created_volume_id = create_volume_resp['VolumeId']
 
         self.logger.debug("Created test volume from production backup Infobright volume snapshot, " +
-                     "VolumeId={}".format(created_volume_id))
+                          "VolumeId={}".format(created_volume_id))
 
         # Invoke next lambda
         self.next_lambda_event = {

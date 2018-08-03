@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 from typing import Dict
 
 import lib.steps
@@ -22,10 +21,9 @@ class WaitVolumeCreatedJob(lib.job.Job):
 
         # AWS clients
         ec2 = boto3.client('ec2')
-        sqs = boto3.client('sqs')
 
         # Get status of volume
-        vol_resp = ec2.describe_volumes(VolumeIds=[ volume_id ])
+        vol_resp = ec2.describe_volumes(VolumeIds=[volume_id])
 
         volumes = vol_resp['Volumes']
         if len(volumes) != 1:

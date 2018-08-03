@@ -3,6 +3,7 @@ from typing import Dict
 import lib.job
 import lib.steps
 
+
 class TestBackupJob(lib.job.Job):
     """ Performs the test backup step
     """
@@ -10,6 +11,7 @@ class TestBackupJob(lib.job.Job):
     def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
         self.logger.debug("hello test backup")
         return lib.job.NextAction.TERMINATE
+
 
 def main(event, ctx):
     """ Lambda function handler

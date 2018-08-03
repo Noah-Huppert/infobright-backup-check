@@ -28,7 +28,7 @@ class WaitVolumeAttachedStep(lib.job.Job):
         ec2 = boto3.client('ec2')
 
         # Get volume
-        volumes_resp = ec2.describe_volumes(VolumeIds=[ volume_id ])
+        volumes_resp = ec2.describe_volumes(VolumeIds=[volume_id])
 
         volumes = volumes_resp['Volumes']
         if len(volumes) == 0:

@@ -6,7 +6,6 @@ import argparse
 import os
 import os.path
 import hashlib
-import zipfile
 import subprocess
 from typing import Dict, List
 
@@ -78,7 +77,7 @@ def main() -> int:
 
     # Upload artifacts
     artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
-                                         code_bucket=args.code_bucket, env=args.env)
+                                        code_bucket=args.code_bucket, env=args.env)
 
     # Deploy CloudFormation stack
     deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
@@ -100,7 +99,7 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
     """
     # Assemble deploy command arguments
     args = ['cloudformation', 'deploy', '--stack-name', stack_name, '--template-file', cf_stack_path,
-                 '--capabilities', 'CAPABILITY_NAMED_IAM', '--parameter-overrides']
+            '--capabilities', 'CAPABILITY_NAMED_IAM', '--parameter-overrides']
 
     # Define CloudFormation parameters values
     param_overrides = {
@@ -287,12 +286,14 @@ def get_venv_lib_dir() -> str:
 
     return os.path.abspath(os.path.join(venv_dir, 'lib/python3.6/site-packages'))
 
+
 def get_git_head_sha() -> str:
     """ Get Git repo HEAD sha
     Returns: Git repo HEAD sha
     """
     repo = Repo(repo_dir)
     return repo.head.commit.hexsha
+
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -1,5 +1,6 @@
 from typing import Dict
 
+
 def find_instance_by_name(ec2, name: str) -> Dict[str, object]:
     """ Finds an EC2 instance by its name
     Args:
@@ -13,7 +14,7 @@ def find_instance_by_name(ec2, name: str) -> Dict[str, object]:
     """
     instances_resp = ec2.describe_instances(Filters=[{
         'Name': 'tag:Name',
-        'Values': [ name ]
+        'Values': [name]
     }])
 
     instances_rs = instances_resp['Reservations']

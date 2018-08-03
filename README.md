@@ -218,8 +218,17 @@ Components:
     - For all steps
 
 # Development
-The `cloudformation-util.sh` script provides several useful commands for development.  
+A deploy script it provided packages all step lambda code, uploads it, and then deploys a CloudFormation stack which 
+creates all the Lambdas.  
 
-See the comment in the top of this script for details.  
+Run by executing:
 
-This script can also be accessed via the name `cf-util`.
+```
+./deploy/deploy.sh
+```
+
+Lint code by running the `lint` make target:
+
+```
+make lint
+```

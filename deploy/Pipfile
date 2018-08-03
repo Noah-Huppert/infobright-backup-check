@@ -9,6 +9,7 @@ name = "pypi"
 gitpython = "*"
 "boto3" = "*"
 inflection = "*"
+"flake8" = "*"
 
 [requires]
 python_version = "3.6"

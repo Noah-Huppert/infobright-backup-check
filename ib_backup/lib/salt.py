@@ -3,6 +3,7 @@ from typing import List
 
 import requests
 
+
 def get_auth_token(host: str, username: str, password: str) -> str:
     """ Retrieves a Salt API authentication token.
     Args:
@@ -40,6 +41,7 @@ def get_auth_token(host: str, username: str, password: str) -> str:
         return 1
 
     return resp_body['return'][0]['token']
+
 
 def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []):
     """ Executes a Salt command

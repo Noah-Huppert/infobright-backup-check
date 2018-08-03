@@ -84,7 +84,6 @@ class Job:
 
         self.logger = lib.log.get_logger("{}-{}".format(self.lambda_name, datetime.datetime.now()))
 
-
     def run(self, event: Dict[str, object], ctx):
         """ Invokes the custom `handle` method and performs an action based on the returned NextAction value
         See the NextAction documentation for more details on what actions will be performed for each value.
@@ -95,7 +94,10 @@ class Job:
 
         Raises: Any exception on any failure
         """
+        # Get iteration count, or set if it doesn't exist
         iteration_count = 0
+        if 'iteration_count' in event:
+            iteration_count = event['iteration_count']
 
         # Invoke handle method
         self.logger.debug("Invoking handle, event={}".format(event))
@@ -127,11 +129,12 @@ class Job:
 
             time.sleep(self.repeat_delay)
 
+            event['iteration_count'] = iteration_count + 1
+
             self.logger.debug("Done waiting, invoking self again")
             self.__invoke_lambda__(event, ctx.function_name)
         else:
             raise ValueError("Unknown Job.handle return value: {}".format(next_action))
-
 
     def __invoke_lambda__(self, event: Dict[str, object], invoke_lambda_name: str):
         """ Invokes an AWS Lambda function
@@ -143,11 +146,10 @@ class Job:
         lambda_client = boto3.client('lambda')
 
         invoke_res = lambda_client.invoke(FunctionName=invoke_lambda_name,
-                             InvocationType='Event',
-                             Payload=json.dumps(event))
+                                          InvocationType='Event',
+                                          Payload=json.dumps(event))
 
         self.logger.debug("Invoked lambda, name={}, event={}, result={}".format(invoke_lambda_name, event, invoke_res))
-
 
     def handle(self, event: Dict[str, object], ctx) -> NextAction:
         """ The code to run when the lambda is invoked.
@@ -160,4 +162,3 @@ class Job:
         Returns: NextAction to determine what should happen after handle finishes
         """
         raise NotImplementedError()
-
