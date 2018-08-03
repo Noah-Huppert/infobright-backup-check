@@ -78,7 +78,7 @@ def main() -> int:
 
     # Upload artifacts
     artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
-                                         code_bucket=args.code_bucket)
+                                         code_bucket=args.code_bucket, env=args.env)
 
     # Deploy CloudFormation stack
     deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
@@ -154,6 +154,7 @@ def exec_aws(cmd_args: List[str], aws_profile: str = None) -> subprocess.Complet
     """ Executes an AWS CLI command
     Args:
         - cmd_args: AWS command arguments
+        - aws_profile: AWS credentials profile to execute command with
 
     Returns: Command result
     """
@@ -169,12 +170,15 @@ def exec_aws(cmd_args: List[str], aws_profile: str = None) -> subprocess.Complet
 
 
 def upload_artifacts(logger: logging.Logger, s3, artifact_names: Dict[str, str], stack_name: str,
-                     code_bucket: str) -> Dict[str, str]:
+                     code_bucket: str, env: str) -> Dict[str, str]:
     """ Uploads step artifacts to S3
     Args:
         - logger
         - s3: AWS S3 API client
         - artifact_names: Paths to artifacts on system, output of build_artifacts()
+        - stack_name: Name of CloudFormation stack, used to determine where artifacts are uploaded in s3
+        - code_bucket: Bucket to upload artifacts into
+        - env: Name of deployment environment
 
     Returns:
         - S3 keys step artifacts are uploaded under
@@ -189,7 +193,11 @@ def upload_artifacts(logger: logging.Logger, s3, artifact_names: Dict[str, str],
         file_path = artifact_names[step_name]
         file_name = os.path.basename(file_path)
 
-        s3_key = "release/lambdas/{}/{}".format(stack_name, file_name)
+        upload_parent_dir = 'snapshot'
+        if env == 'prod':
+            upload_parent_dir = 'release'
+
+        s3_key = "{}/lambdas/{}/{}".format(upload_parent_dir, stack_name, file_name)
         s3_uri = "s3://{}/{}".format(code_bucket, s3_key)
 
         s3_keys[step_name] = s3_key

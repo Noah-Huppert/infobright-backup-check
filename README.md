@@ -19,12 +19,6 @@ The process is completed by a series of AWS Lambda functions which create a
 pipeline. After one AWS Lambda function has completed the next AWS Lambda 
 function is invoked.  
 
-Some pipeline steps involve waiting for AWS resources to reach a desired state. 
-These steps send messages to a special
-[AWS SQS Delay Queue](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html) 
-which invokes the waiting Lambda every minute until the desired state has been 
-reached.
-
 ## Trigger
 The process is started by an AWS CloudWatch event which runs every day at 
 00:00 UTC.  
@@ -106,7 +100,6 @@ File: `ib_backup/step_wait_volume_created.py`
 
 Environment variables:
 
-- `WAIT_QUEUE_URL`: AWS URL of SQS wait queue
 - `NEXT_LAMBDA_NAME`: Name of the [Attach Test Volume lambda](#attach-test-volume)
 
 Expected event: 
@@ -117,8 +110,7 @@ Actions:
 
 - Check if the test volume has been created
     - If created: Invoke the [Attach Test Volume lambda](#attach-test-volume)
-    - If not created: Add a message to the wait SQS queue which will invoke 
-        this step again
+    - If not created: Invoke this step again in 15 seconds
 
 ### Attach Test Volume
 Attaches the test volume to the development Infobright replica.
@@ -141,7 +133,6 @@ Waits for the test volume to be attached to the development Infobright replica.
 
 Environment variables:
 
-- `WAIT_QUEUE_URL`: AWS URL of SQS wait queue
 - `NEXT_LAMBDA_NAME`: Name of the [Test Infobright Backup lambda](#test-infobright-backup)
 
 Expected event:
@@ -153,8 +144,7 @@ Actions:
 
 - Check if the test volume is attached to the `ib02.dev` instance
     - If attached: Invoke the [Test Infobright Backup step](#test-infobright-backup)
-    - If not attached: Add a message to the wait SQS queue which will invoke 
-        this step again
+    - If not attached: Invoke this step again in 15 seconds
 
 ### Test Infobright Backup
 Tests the integrity of the Infobright backup.  
@@ -199,8 +189,7 @@ Actions:
 
 - Check if the test volume is detached from the `ib02.dev` instance
     - If detached: Invoke the [Cleanup step](#cleanup)
-    - If not detached: Add a message to the wait SQS queue which will invoke 
-        this step again
+    - If not detached: Invoke this step again in 15 seconds
 
 ### Cleanup
 Deletes the test volume and stops the development Infobright replica.  
@@ -224,14 +213,6 @@ Components:
 - Trigger CloudWatch rule
     - Triggers at 00:00 UTC
     - Triggers [Snapshot step](#snapshot) lambda
-- SQS wait queue
-    - 1 minute delay
-    - Normal queue
-    - Triggers wait step lambdas:
-        - [Wait Snapshot Created](#wait-snapshot-created)
-        - [Wait Test Volume Created](#wait-test-volume-created)
-        - [Wait Test Volume Attached](#wait-test-volume-attached)
-        - [Wait Test Volume Detached](#wait-test-volume-detached)
 - Step lambdas
     - Python 3.6
     - For all steps
