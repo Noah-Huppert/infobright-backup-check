@@ -14,15 +14,15 @@ class WaitVolumeAttachedStep(lib.job.Job):
     def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
         # Get volume id from event
         if 'volume_id' not in event:
-            raise KeyError("\"volume_id\" expected to be in event")
+            raise KeyError("event must contain \"volume_id\" field")
 
         volume_id = event['volume_id']
 
-        # Get instance id from event
-        if 'instance_id' not in event:
-            raise KeyError("\"instance_id\" expected to be in event")
+        # Get dev ib backup instance id
+        if 'dev_ib_backup_instance_id' not in event:
+            raise KeyError("event must contain \"dev_ib_backup_instance_id\" field")
 
-        instance_id = event['instance_id']
+        dev_ib_backup_instance_id = event['dev_ib_backup_instance_id']
 
         # Get mount point from event
         if 'mount_point' not in event:
@@ -54,13 +54,13 @@ class WaitVolumeAttachedStep(lib.job.Job):
         instance_attachment = None
 
         for attachment in attachments:
-            if attachment['InstanceId'] == instance_id:
+            if attachment['InstanceId'] == dev_ib_backup_instance_id:
                 instance_attachment = attachment
                 break
 
         if instance_attachment is None:
-            raise ValueError("Could not find volume attachment for test instance, test instance id={}, volume={}"
-                             .format(instance_id, volume))
+            raise ValueError("Could not find volume attachment for instance, dev ib backup instance id={}, volume={}"
+                             .format(dev_ib_backup_instance_id, volume))
 
         self.logger.debug("Found volume attachment status")
 
@@ -71,7 +71,7 @@ class WaitVolumeAttachedStep(lib.job.Job):
             # Invoke next lambda
             self.next_lambda_event = {
                 'volume_id': volume_id,
-                'instance_id': instance_id,
+                'dev_ib_backup_instance_id': dev_ib_backup_instance_id,
                 'mount_point': mount_point
             }
 

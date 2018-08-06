@@ -113,7 +113,6 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
     # Define CloudFormation parameters values
     param_overrides = {
         'Environment': env,
-        'ProcessName': stack_name,
         'StepLambdaCodeBucket': code_bucket
     }
 

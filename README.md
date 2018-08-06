@@ -104,6 +104,7 @@ Environment variables:
 
 Expected event: 
 
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
 - `volume_id`: Id of volume to wait for
 
 Actions:
@@ -121,6 +122,7 @@ Environment variables:
 
 Expected event:
 
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
 - `volume_id`: Id of volume to attach
 
 Actions:
@@ -138,7 +140,7 @@ Environment variables:
 Expected event:
 
 - `volume_id`: Id of the volume to wait for
-- `instance_id`: If of instance volume is attached to
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
 - `mount_point`: Path in file system device was attached
 
 Actions:
@@ -159,7 +161,7 @@ Environment variables:
 Expected event:
 
 - `volume_id`: Id of snapshot test volume
-- `instance_id`: If of instance volume is attached to
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
 - `mount_point`: Path in file system device was attached
 
 Actions:
@@ -185,7 +187,7 @@ Environment variables:
 Expected event:
 
 - `volume_id`: Id of test volume to detach
-- `instance_id`: If of instance volume is attached to
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
 
 Actions:
 
@@ -200,6 +202,7 @@ Environment variables: None
 
 Expected event:
 
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
 - `volume_id`: Id of test volume to delete
 
 Actions:

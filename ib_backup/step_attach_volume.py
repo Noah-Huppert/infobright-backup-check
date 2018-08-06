@@ -9,7 +9,6 @@ import lib.aws_ec2
 import boto3
 
 # Constants
-DEV_IB_BACKUP_NAME = 'ib02.dev.code418.net'
 DEV_IB_BACKUP_ATTACH_DEV_NAME = '/dev/sdg'
 
 
@@ -18,25 +17,25 @@ class AttachVolumeJob(lib.job.Job):
     """
 
     def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
+        # Get dev ib backup instance id
+        if 'dev_ib_backup_instance_id' not in event:
+            raise KeyError("event must contain \"dev_ib_backup_instance_id\" field")
+
+        dev_ib_backup_instance_id = event['dev_ib_backup_instance_id']
+
         # Get volume id from event
         if 'volume_id' not in event:
-            raise KeyError("\"volume_id\" must be present in event")
+            raise KeyError("event must contain \"volume_id\" field")
 
         volume_id = event['volume_id']
 
         # AWS EC2 client
         ec2 = boto3.client('ec2')
 
-        # Find dev backup infobright instance
-        instance = lib.aws_ec2.find_instance_by_name(ec2, DEV_IB_BACKUP_NAME)
-        instance_id = instance['InstanceId']
-
-        self.logger.debug("Found dev Infobright backup instance, instance_id={}".format(instance_id))
-
         # Attach volume
         ec2.attach_volume(
             Device=DEV_IB_BACKUP_ATTACH_DEV_NAME,
-            InstanceId=instance_id,
+            InstanceId=dev_ib_backup_instance_id,
             VolumeId=volume_id
         )
 
@@ -46,7 +45,7 @@ class AttachVolumeJob(lib.job.Job):
         # Invoke next lambda
         self.next_lambda_event = {
             'volume_id': volume_id,
-            'instance_id': instance_id,
+            'dev_ib_backup_instance_id': dev_ib_backup_instance_id,
             'mount_point': DEV_IB_BACKUP_ATTACH_DEV_NAME
         }
 

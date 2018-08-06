@@ -13,6 +13,12 @@ class WaitVolumeCreatedJob(lib.job.Job):
     """
 
     def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
+        # Get dev ib backup instance id
+        if 'dev_ib_backup_instance_id' not in event:
+            raise KeyError("event must contain \"dev_ib_backup_instance_id\" field")
+
+        dev_ib_backup_instance_id = event['dev_ib_backup_instance_id']
+
         # Get volume id from event
         if 'volume_id' not in event:
             raise KeyError("event must contain \"volume_id\" field")
@@ -37,6 +43,7 @@ class WaitVolumeCreatedJob(lib.job.Job):
 
             # Invoke next lambda
             self.next_lambda_event = {
+                'dev_ib_backup_instance_id': dev_ib_backup_instance_id,
                 'volume_id': volume_id
             }
 

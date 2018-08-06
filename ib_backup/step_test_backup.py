@@ -33,15 +33,15 @@ class TestBackupJob(lib.job.Job):
 
         # Get volume id from event
         if 'volume_id' not in event:
-            raise KeyError("\"volume_id\" expected to be in event")
+            raise KeyError("event must contain \"volume_id\" field")
 
         volume_id = event['volume_id']
 
         # Get instance id from event
-        if 'instance_id' not in event:
-            raise KeyError("\"instance_id\" expected to be in event")
+        if 'dev_ib_backup_instance_id' not in event:
+            raise KeyError("event must contain \"dev_ib_backup_instance_id\" field")
 
-        instance_id = event['instance_id']
+        dev_ib_backup_instance_id = event['dev_ib_backup_instance_id']
 
         # Get mount point from event
         if 'mount_point' not in event:
@@ -59,7 +59,7 @@ class TestBackupJob(lib.job.Job):
         self.logger.debug("Authenticated with Salt API")
 
         # Setup ib02.dev for snapshot test
-        ib_backup_salt_target = "G@ec2:instance_id:{}".format(instance_id)
+        ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
         setup_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
                                    cmd='state.apply', args=['infobright.setup-ib-restore-test'])
@@ -76,15 +76,15 @@ class TestBackupJob(lib.job.Job):
         self.logger.debug("teardown resp={}".format(teardown_resp))
 
         # Detach volume
-        ec2.detach_volume(Device=mount_point, InstanceId=instance_id, VolumeId=volume_id)
+        ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
 
-        self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, instance_id={}"
-                          .format(volume_id, instance_id))
+        self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, dev_ib_backup_instance_id={}"
+                          .format(volume_id, dev_ib_backup_instance_id))
 
         # Run next lambda
         self.next_lambda_event = {
             'volume_id': volume_id,
-            'instance_id': intance_id
+            'dev_ib_backup_instance_id': intance_id
         }
         return lib.job.NextAction.TERMINATE
 
