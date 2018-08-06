@@ -24,6 +24,12 @@ class WaitVolumeAttachedStep(lib.job.Job):
 
         instance_id = event['instance_id']
 
+        # Get mount point from event
+        if 'mount_point' not in event:
+            raise KeyError("\"mount_point\" expected to be in event")
+
+        mount_point = event['mount_point']
+
         # AWS client
         ec2 = boto3.client('ec2')
 
@@ -56,6 +62,8 @@ class WaitVolumeAttachedStep(lib.job.Job):
             raise ValueError("Could not find volume attachment for test instance, test instance id={}, volume={}"
                              .format(instance_id, volume))
 
+        self.logger.debug("Found volume attachment status")
+
         # Check status
         if instance_attachment['State'] == 'attached':
             self.logger.debug("volume attached")
@@ -63,7 +71,8 @@ class WaitVolumeAttachedStep(lib.job.Job):
             # Invoke next lambda
             self.next_lambda_event = {
                 'volume_id': volume_id,
-                'instance_id': instance_id
+                'instance_id': instance_id,
+                'mount_point': mount_point
             }
 
             return lib.job.NextAction.NEXT

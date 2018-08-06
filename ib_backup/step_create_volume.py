@@ -24,7 +24,7 @@ class CreateVolumeJob(lib.job.Job):
         # Find production Infobright backup instance
         instance = lib.aws_ec2.find_instance_by_name(ec2, PROD_IB_BACKUP_NAME)
 
-        self.logger.debug("Found production backup Infobright instance, InstanceId={}".format(instance['InstanceId']))
+        self.logger.debug("Found production backup Infobright instance, instance_id={}".format(instance['InstanceId']))
 
         # Get availability zone of instance
         instance_az = instance['Placement']['AvailabilityZone']
@@ -42,7 +42,7 @@ class CreateVolumeJob(lib.job.Job):
             raise ValueError("Could not find data volume \"{}\" attached to production Infobright backup instance"
                              .format(PROD_IB_BACKUP_DATA_VOLUME_NAME))
 
-        self.logger.debug("Found production backup Infobright instance data volume, VolumeId={}".format(volume_id))
+        self.logger.debug("Found production backup Infobright instance data volume, volume_id={}".format(volume_id))
 
         # Get latest snapshot for volume
         snapshot_pager = ec2.get_paginator('describe_snapshots')
@@ -70,7 +70,7 @@ class CreateVolumeJob(lib.job.Job):
         snapshot_size = newest_snapshot['VolumeSize']
         snapshot_id = newest_snapshot['SnapshotId']
 
-        self.logger.debug("Found latest production backup Infobright data volume snapshot, SnapshotId={}"
+        self.logger.debug("Found latest production backup Infobright data volume snapshot, snapshot_id={}"
                           .format(snapshot_id))
 
         # Create test volume from snapshot
@@ -92,7 +92,7 @@ class CreateVolumeJob(lib.job.Job):
         created_volume_id = create_volume_resp['VolumeId']
 
         self.logger.debug("Created test volume from production backup Infobright volume snapshot, " +
-                          "VolumeId={}".format(created_volume_id))
+                          "volume_id={}".format(created_volume_id))
 
         # Invoke next lambda
         self.next_lambda_event = {

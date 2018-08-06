@@ -139,6 +139,7 @@ Expected event:
 
 - `volume_id`: Id of the volume to wait for
 - `instance_id`: If of instance volume is attached to
+- `mount_point`: Path in file system device was attached
 
 Actions:
 
@@ -159,6 +160,7 @@ Expected event:
 
 - `volume_id`: Id of snapshot test volume
 - `instance_id`: If of instance volume is attached to
+- `mount_point`: Path in file system device was attached
 
 Actions:
 

@@ -40,10 +40,14 @@ class AttachVolumeJob(lib.job.Job):
             VolumeId=volume_id
         )
 
+        self.logger.debug("Attached volume to dev Infobright backup instance, volume_id={}, instance_id={}"
+                          .format(volume_id, instance_id))
+
         # Invoke next lambda
         self.next_lambda_event = {
             'volume_id': volume_id,
-            'instance_id': instance_id
+            'instance_id': instance_id,
+            'mount_point': DEV_IB_BACKUP_ATTACH_DEV_NAME
         }
 
         return lib.job.NextAction.NEXT

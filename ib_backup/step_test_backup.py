@@ -1,9 +1,11 @@
+import os
 from typing import Dict
 
 import lib.job
 import lib.steps
 import lib.salt
-from step_attach_volume import DEV_IB_BACKUP_NAME
+
+import boto3
 
 
 class TestBackupJob(lib.job.Job):
@@ -14,7 +16,7 @@ class TestBackupJob(lib.job.Job):
         # Get Salt API configuration
         missing_env_vars = []
 
-		salt_api_url = os.environ.get('SALT_API_URL', None)
+        salt_api_url = os.environ.get('SALT_API_URL', None)
         if not salt_api_url:
             missing_env_vars.append('SALT_API_URL')
 
@@ -29,19 +31,61 @@ class TestBackupJob(lib.job.Job):
         if len(missing_env_vars) > 0:
             raise KeyError("Missing environment variables: {}".format(missing_env_vars))
 
+        # Get volume id from event
+        if 'volume_id' not in event:
+            raise KeyError("\"volume_id\" expected to be in event")
+
+        volume_id = event['volume_id']
+
+        # Get instance id from event
+        if 'instance_id' not in event:
+            raise KeyError("\"instance_id\" expected to be in event")
+
+        instance_id = event['instance_id']
+
+        # Get mount point from event
+        if 'mount_point' not in event:
+            raise KeyError("\"mount_point\" expected to be in event")
+
+        mount_point = event['mount_point']
+
+
+        # AWS clients
+        ec2 = boto3.client('ec2')
+
         # Authenticate with Salt API
         salt_api_token = lib.salt.get_auth_token(host=salt_api_url, username=salt_api_user, password=salt_api_password)
 
+        self.logger.debug("Authenticated with Salt API")
+
         # Setup ib02.dev for snapshot test
-        lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=DEV_IB_BACKUP_NAME, cmd='state.apply',
-                      args=['infobright.setup-ib-restore-test'])
+        ib_backup_salt_target = "G@ec2:instance_id:{}".format(instance_id)
+
+        setup_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                   cmd='state.apply', args=['infobright.setup-ib-restore-test'])
+        self.logger.debug("setup resp={}".format(setup_resp))
 
         # TODO: Run db-cli integrity test
+        ls_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='cmd.run',
+                      args=['ls', '/ibdata-restore'])
+        self.logger.debug("ls resp={}".format(ls_resp))
 
         # Tear down ib02.dev for snapshot test
-        lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=DEV_IB_BACKUP_NAME, cmd='state.apply',
-                      args=['infobright.teardown-ib-restore-test'])
+        teardown_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                      cmd='state.apply', args=['infobright.teardown-ib-restore-test'])
+        self.logger.debug("teardown resp={}".format(teardown_resp))
 
+        # Detach volume
+        ec2.detach_volume(Device=mount_point, InstanceId=instance_id, VolumeId=volume_id)
+
+        self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, instance_id={}"
+                          .format(volume_id, instance_id))
+
+        # Run next lambda
+        self.next_lambda_event = {
+            'volume_id': volume_id,
+            'instance_id': intance_id
+        }
         return lib.job.NextAction.TERMINATE
 
 
