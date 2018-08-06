@@ -16,6 +16,14 @@
             "Type": "String",
             "Description": "Name of the S3 bucket which step lambda code is stored in"
         },
+        "SaltDevSubnetId": {
+            "Type": "String",
+            "Description": "Id of subnet which has access to the development Salt master"
+        },
+        "SaltDevSecurityGroupId": {
+            "Type": "String",
+            "Description": "Id of security group which has access to the development Salt master"
+        },
         "StepCreateVolumeCodeKey": {
             "Type": "String",
             "Description": "Location of create volume step lambda deployment artifact in code bucket"
@@ -240,7 +248,11 @@
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
-                "Timeout": "5"
+                "Timeout": "5",
+                "VpcConfig": {
+                    "SubnetIds": [ { "Ref": "SaltDevSubnetId" } ],
+                    "SecurityGroupIds": [ { "Ref": "SaltDevSecurityGroupId" } ]
+                }
             }
         }
     }

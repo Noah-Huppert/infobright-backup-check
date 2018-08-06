@@ -23,6 +23,16 @@ lib_dir = src_dir + 'lib'  # Directory containing common code between lambdas
 
 cf_stack_path = 'stack.template'  # Path to CloudFormation stack template
 
+DEV_PROD_SUBNET_ID = 'subnet-f16e3daa'  # Id of subnet in development & production with access to the development 
+# Salt master
+DEV_PROD_SECURITY_GROUP_ID = 'sg-c9210cb6'  # Id of security group in development & product with access to the
+# development Salt master
+
+SAND_SUBNET_ID = 'subnet-dfc16bf1'  # Id of subnet in the sandbox with access to the salt master, this is just a 
+# dummy value because there is no functioning salt master in the sandbox
+SAND_SECURITY_GROUP_ID = 'sg-b66e74fd'  # Id of security group in the sandbox with access to the salt master, this is 
+# just a dummy value because there is no functioning salt master in the sandbox
+
 # Step constants
 # Names of process steps
 steps = ['step_create_volume', 'step_wait_volume_created', 'step_attach_volume', 'step_wait_volume_attached',
@@ -44,7 +54,7 @@ def main() -> int:
     logger.addHandler(hndlr)
 
     # Parse arguments
-    code_bucket_placeholder = '<depends on --env>'
+    env_dependant_placeholder = '<depends on --env>'
 
     parser = argparse.ArgumentParser(description="Deploy script")
     parser.add_argument('--aws-profile',
@@ -58,15 +68,35 @@ def main() -> int:
                         default='ib-backup')
     parser.add_argument('--code-bucket',
                         help="S3 bucket to upload code into",
-                        default=code_bucket_placeholder)
+                        default=env_dependant_placeholder)
+    parser.add_argument('--subnet-id',
+                        help="Id of subnet which has access to the development Salt master",
+                        default=env_dependant_placeholder)
+    parser.add_argument('--security-group-id',
+                        help="Id of security group which has access to the development Salt master",
+                        default=env_dependant_placeholder)
     args = parser.parse_args()
 
     # Set default --code-bucket depending on --env
-    if args.code_bucket == code_bucket_placeholder:
+    if args.code_bucket == env_dependant_placeholder:
         if args.env == 'sand':
             args.code_bucket = 'amino-sandbox-repo'
         else:
             args.code_bucket = 'repo.code418.net'
+
+    # Set default --subnet-id depending on --env
+    if args.subnet_id == env_dependant_placeholder:
+        if args.env in ['dev', 'prod']:
+            args.subnet_id = DEV_PROD_SUBNET_ID
+        else:
+            args.subnet_id = SAND_SUBNET_ID
+
+    # Set default --security-group-id depending on --env
+    if args.security_group_id == env_dependant_placeholder:
+        if args.security_group_id in ['dev', 'prod']:
+            args.security_group_id = DEV_PROD_SECURITY_GROUP_ID
+        else:
+            args.security_group_id = SAND_SECURITY_GROUP_ID
 
     # AWS clients
     aws_profile_args = {}
@@ -96,7 +126,8 @@ def main() -> int:
 
 
 def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[str, str], env: str,
-                                stack_name: str, code_bucket: str, aws_profile: str = None):
+                                stack_name: str, code_bucket: str, subnet_id: str, security_group_id: str,
+                                aws_profile: str = None):
     """ Deploys a CloudFormation stack
     Args:
         - logger
@@ -104,6 +135,8 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
         - env: Name of environment stack is being deployed to
         - stack_name: Name of CloudFormation stack to deploy
         - code_bucket: Name of bucket Lambda deployment artifacts were stored in
+        - subnet_id: Id of subnet which has access to the development Salt master
+        - security_group_id: Id of security group which has access to the development Salt master
         - aws_profile: Name of aws credentials profile, None if default credentials should be used
     """
     # Assemble deploy command arguments
@@ -113,7 +146,9 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
     # Define CloudFormation parameters values
     param_overrides = {
         'Environment': env,
-        'StepLambdaCodeBucket': code_bucket
+        'StepLambdaCodeBucket': code_bucket,
+        'SaltDevSubnetId': subnet_id,
+        'SaltDevSecurityGroupId': security_group_id
     }
 
     # ... For each step find the key the lambda deployment artifact was uploaded to S3 under
