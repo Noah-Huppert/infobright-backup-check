@@ -44,6 +44,8 @@ def main() -> int:
     logger.addHandler(hndlr)
 
     # Parse arguments
+    code_bucket_placeholder = '<depends on --env>'
+
     parser = argparse.ArgumentParser(description="Deploy script")
     parser.add_argument('--aws-profile',
                         help="AWS credential profile")
@@ -56,8 +58,15 @@ def main() -> int:
                         default='ib-backup')
     parser.add_argument('--code-bucket',
                         help="S3 bucket to upload code into",
-                        default='amino-sandbox-repo')
+                        default=code_bucket_placeholder)
     args = parser.parse_args()
+
+    # Set default --code-bucket depending on --env
+    if args.code_bucket == code_bucket_placeholder:
+        if args.env == 'sand':
+            args.code_bucket = 'amino-sandbox-repo'
+        else:
+            args.code_bucket = 'repo.code418.net'
 
     # AWS clients
     aws_profile_args = {}
