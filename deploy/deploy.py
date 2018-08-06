@@ -120,7 +120,8 @@ def main() -> int:
 
     # Deploy CloudFormation stack
     deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
-                                stack_name=stack_name, code_bucket=args.code_bucket, aws_profile=args.aws_profile)
+                                stack_name=stack_name, code_bucket=args.code_bucket, subnet_id=args.subnet_id,
+                                security_group_id=args.security_group_id, aws_profile=args.aws_profile)
 
     return 0
 
