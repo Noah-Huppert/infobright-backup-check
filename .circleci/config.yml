@@ -64,11 +64,11 @@ jobs:
           name: Packaging and uploading
           command: |
             cd deploy/
-            pipenv run ./deploy.py --stages upload --env prod --save-artifact-s3-keys artifact-s3-keys.json
+            pipenv run ./deploy.py --stages upload --env prod --save-code-bucket code-bucket.txt --save-artifact-s3-keys artifact-s3-keys.json
 
       - run:
           name: Creating GitHub release
-          command: ./deploy/create_gh_release.py --release --artifact-locations-file artifact-s3-keys.json
+          command: ./deploy/create_gh_release.py --release --code-bucket-file code-bucket.txt --artifact-locations-file artifact-s3-keys.json
 
 workflows:
   version: 2

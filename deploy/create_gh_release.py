@@ -65,12 +65,13 @@ RELEASE_BODY = """
 """
 
 
-def generate_body(pulls, releases, tag, artifact_locations_file):
+def generate_body(pulls, releases, tag, code_bucket_file, artifact_locations_file):
     """ Create GitHub release body
     Args:
         - pulls: List of pull requests
         - releases: GitHub release for repo
         - tag: GitHub release tag
+        - code_bucket_file: File containing the name of the S3 bucket which artifacts will be uploaded to
         - artifact_locations_file: File containing the locations in S3 of the lambda deployment artifacts
     """
     # Get compare url
@@ -88,12 +89,18 @@ def generate_body(pulls, releases, tag, artifact_locations_file):
     artifacts_body = ""
     artifacts_lists = []
 
+    code_bucket = None
+    with open(code_bucket_file, 'r') as f:
+        code_bucket = f.read().strip()
+
     artifact_locations = None
     with open(artifact_locations_file, 'r') as f:
         artifact_locations = json.load(f)
 
     for step_name in list(artifact_locations):
         artifacts_lists.append("- `{}`: `{}`".format(step_name, artifact_locations[step_name]))
+
+    artifact_body += "Artifact S3 Bucket: {}\n".format(code_bucket)
 
     artifacts_body += '\n'.join(artifacts_lists)
 
@@ -147,12 +154,23 @@ def create_release(tag, release_body_str, dry_run):  # create a new release
 def get_parser():
     parser = argparse.ArgumentParser(
         description="Release script for generating Github releases from within a CircleCI build")
-    parser.add_argument('--get-new-tag', help='Generate a new git release tag', action='store_true')
-    parser.add_argument('--release', action='store_true',
-                        help='Given a release tag, create a Github release with all of the PRs since the last release')
-    parser.add_argument('--tag', nargs=1, help='Used in conjunction with --release')
-    parser.add_argument('--artifact-locations-file', help='File which contains locations of artifacts in S3')
-    parser.add_argument('--dry-run', action='store_true', help='Dry run the release')
+    parser.add_argument('--get-new-tag',
+                        help="Generate a new git release tag",
+                        action='store_true')
+    parser.add_argument('--release',
+                        action='store_true',
+                        help="Given a release tag, create a Github release with all of the PRs since the last release")
+    parser.add_argument('--tag',
+                        nargs=1,
+                        help="Used in conjunction with --release")
+    parser.add_argument('--code-bucket-file',
+                        help="(Required with --release argument) File which contains the name of the S3 bucket code " +
+                             "artifacts were uploaded to")
+    parser.add_argument('--artifact-locations-file',
+                        help="(Required with --release argument) File which contains locations of artifacts in S3")
+    parser.add_argument('--dry-run',
+                        action='store_true',
+                        help="Dry run the release")
     return parser
 
 
@@ -169,9 +187,16 @@ if __name__ == "__main__":
 
     # Perform a full release with either a generated or user provided tag
     if args.release:
+        # Check --code-bucket-file and --artifact-locations-file arguments provided with --release argument
+        if not args.code_bucket_file:
+            raise ValueError("--code-bucket-file argument must be provided if --release argument is given")
+
+        if not args.artifact_locations_file:
+            raise ValueError("--artifact-locations-file argument must be provided if --release argument is given")
+
         # Get pull requests since last release
         pulls_result = get_pulls(releases_result)
-        body = generate_body(pulls_result, releases_result, tag, args.artifact_locations_file)
+        body = generate_body(pulls_result, releases_result, tag, args.code_bucket_file, args.artifact_locations_file)
         create_release(tag, body, args.dry_run)
     elif tag:
         # Used for exporting the value to be used in CircleCI

@@ -70,7 +70,7 @@ def main() -> int:
                              "names (Names: {}), all step names must be provided. Object ".format(", ".join(steps)) +
                              "values are AWS S3 keys to step build artifacts in the specified code bucket.")
     parser.add_argument('--save-artifact-s3-keys',
-                        help="(Required by 'upload' stage) File to save step artifact S3 locations. Saved in JSON " +
+                        help="(Optional when stage is 'upload') File to save step artifact S3 locations. Saved in JSON " +
                              "format described by --artifact-s3-keys help")
     parser.add_argument('--aws-profile',
                         help="(Required by all stages) AWS credential profile")
@@ -85,6 +85,8 @@ def main() -> int:
     parser.add_argument('--code-bucket',
                         help="(Required by all stages) S3 bucket to upload code into",
                         default=env_dependant_placeholder)
+    parser.add_argument('--save-code-bucket',
+                        help="(Optional when stage is 'upload') File to save the name of the S3 code bucket")
     parser.add_argument('--subnet-id',
                         help="(Required by 'deploy' stage) Id of subnet which has access to the development " +
                              "Salt master",
@@ -204,6 +206,13 @@ def main() -> int:
                                             code_bucket=args.code_bucket, env=args.env)
 
         logger.debug("Uploaded artifacts, locations={}".format(artifact_s3_keys))
+
+        # Save code_bucket if --save-code-bucket is provided
+        if args.save_code_bucket:
+            with open(repo_dir + args.save_code_bucket, 'w') as f:
+                f.write(args.code_bucket)
+
+            logger.debug("Saved code bucket to \"{}\"".format(args.code_bucket))
 
         # Save artifact_s3_keys if --save-artifact-s3-keys is provided
         if args.save_artifact_s3_keys:
