@@ -102,7 +102,7 @@ def generate_body(pulls, releases, tag, archive_locations_file):
                       .format(artifacts_locations_str)
 
     artifacts_body += "\n\nPass the following pillar argument to the Salt state:\n```\npillar='{}'\n```"\
-                      .format({ "artifact_s3_keys": json.dumps(artifacts_locations_str) })
+                      .format(json.dumps({ "artifact_s3_keys": artifacts_locations }))
 
     return RELEASE_BODY.format(comparison_url=comparison_url, pr_list=pr_list, artifacts_body=artifacts_body)
 
