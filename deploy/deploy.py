@@ -83,10 +83,12 @@ def main() -> int:
                         help="(Required by all stages) S3 bucket to upload code into",
                         default=env_dependant_placeholder)
     parser.add_argument('--subnet-id',
-                        help="(Required by 'deploy' stage) Id of subnet which has access to the development Salt master",
+                        help="(Required by 'deploy' stage) Id of subnet which has access to the development " +
+                             "Salt master",
                         default=env_dependant_placeholder)
     parser.add_argument('--security-group-id',
-                        help="(Required by 'deploy' stage) Id of security group which has access to the development Salt master",
+                        help="(Required by 'deploy' stage) Id of security group which has access to the development " +
+                             "Salt master",
                         default=env_dependant_placeholder)
     args = parser.parse_args()
 
@@ -140,7 +142,7 @@ def main() -> int:
 
         if expected_steps != actual_steps:
             raise ValueError("--artifact-s3-keys must contain a key for each step, expected keys: {}, actual keys: {}"
-                             .format(expected_keys, actual_keys))
+                             .format(expected_steps, actual_steps))
     else:
         # If --stages != ['deploy'] notify user that argument will not do anything
         if args.artifact_s3_keys:
@@ -169,7 +171,7 @@ def main() -> int:
 
         # Upload artifacts
         artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
-                                        code_bucket=args.code_bucket, env=args.env)
+                                            code_bucket=args.code_bucket, env=args.env)
 
     if 'deploy' in args.stages:
         # Deploy CloudFormation stack
