@@ -99,11 +99,7 @@ def main() -> int:
             args.security_group_id = DEV_PROD_SECURITY_GROUP_ID
 
     # Print configuration
-    logger.debug("Configuration")
-    logger.debug("=============")
-
-    for config_key in list(args):
-        logger.debug("    {}: {}".format(config_key, args[config_key]))
+    logger.debug("Configuration: {}".format(args))
 
     # AWS clients
     aws_profile_args = {}
