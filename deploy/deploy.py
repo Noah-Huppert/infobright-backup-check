@@ -70,8 +70,8 @@ def main() -> int:
                              "names (Names: {}), all step names must be provided. Object ".format(", ".join(steps)) +
                              "values are AWS S3 keys to step build artifacts in the specified code bucket.")
     parser.add_argument('--save-artifact-s3-keys',
-                        help="(Optional when stage is 'upload') File to save step artifact S3 locations. Saved in JSON " +
-                             "format described by --artifact-s3-keys help")
+                        help="(Optional when stage is 'upload') File to save step artifact S3 locations. Saved in " +
+                             "JSON format described by --artifact-s3-keys help")
     parser.add_argument('--aws-profile',
                         help="(Required by all stages) AWS credential profile")
     parser.add_argument('--env',
