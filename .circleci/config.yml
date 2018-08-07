@@ -45,8 +45,12 @@ jobs:
           at: .
 
       - run:
+          name: Installing Make
+          command: apk add --update make
+
+      - run:
           name: Installing AWS CLI
-          command: pip install awscli
+          command: pip install awscli 
 
       - run:
           name: Installing Pipenv
