@@ -45,8 +45,8 @@ jobs:
           at: .
 
       - run:
-          name: Installing Make and Git
-          command: apk add --update make git
+          name: Installing build dependencies
+          command: apk add --update make git zip
 
       - run:
           name: Installing AWS CLI
