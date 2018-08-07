@@ -68,7 +68,7 @@ def main() -> int:
                         help="(Required if only stage is 'deploy') String representing JSON object which holds " +
                              "locations of step build artifacts in S3. Object keys are step " +
                              "names (Names: {}), all step names must be provided. Object ".format(", ".join(steps)) +
-                             "values are AWS S3 URIs to step build artifacts")
+                             "values are AWS S3 keys to step build artifacts in the specified code bucket.")
     parser.add_argument('--save-artifact-s3-keys',
                         help="(Required by 'upload' stage) File to save step artifact S3 locations. Saved in JSON " +
                              "format described by --artifact-s3-keys help")
@@ -207,14 +207,8 @@ def main() -> int:
 
         # Save artifact_s3_keys if --save-artifact-s3-keys is provided
         if args.save_artifact_s3_keys:
-            # Prepend s3 bucket to values
-            to_save_artifact_s3_keys = {}
-
-            for step_name in artifact_s3_keys:
-                to_save_artifact_s3_keys[step_name] = "s3://{}/{}".format(args.code_bucket, artifact_s3_keys[step_name])
-
             with open(repo_dir + args.save_artifact_s3_keys, 'w') as f:
-                json.dump(to_save_artifact_s3_keys, f)
+                json.dump(artifact_s3_keys, f)
 
             logger.debug("Saved artifact upload locations to \"{}\"".format(args.save_artifact_s3_keys))
 
