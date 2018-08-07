@@ -23,14 +23,14 @@ lib_dir = src_dir + 'lib'  # Directory containing common code between lambdas
 
 cf_stack_path = 'stack.template'  # Path to CloudFormation stack template
 
-DEV_PROD_SUBNET_ID = 'subnet-f16e3daa'  # Id of subnet in development & production with access to the development 
+DEV_PROD_SUBNET_ID = 'subnet-f16e3daa'  # Id of subnet in development & production with access to the development
 # Salt master
 DEV_PROD_SECURITY_GROUP_ID = 'sg-c9210cb6'  # Id of security group in development & product with access to the
 # development Salt master
 
-SAND_SUBNET_ID = 'subnet-dfc16bf1'  # Id of subnet in the sandbox with access to the salt master, this is just a 
+SAND_SUBNET_ID = 'subnet-dfc16bf1'  # Id of subnet in the sandbox with access to the salt master, this is just a
 # dummy value because there is no functioning salt master in the sandbox
-SAND_SECURITY_GROUP_ID = 'sg-b66e74fd'  # Id of security group in the sandbox with access to the salt master, this is 
+SAND_SECURITY_GROUP_ID = 'sg-b66e74fd'  # Id of security group in the sandbox with access to the salt master, this is
 # just a dummy value because there is no functioning salt master in the sandbox
 
 # Step constants
@@ -93,7 +93,7 @@ def main() -> int:
 
     # Set default --security-group-id depending on --env
     if args.security_group_id == env_dependant_placeholder:
-        if args.security_group_id in 'sand'
+        if args.security_group_id in 'sand':
             args.security_group_id = SAND_SECURITY_GROUP_ID
         else:
             args.security_group_id = DEV_PROD_SECURITY_GROUP_ID

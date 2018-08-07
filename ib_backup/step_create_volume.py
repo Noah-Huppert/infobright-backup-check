@@ -75,7 +75,7 @@ class CreateVolumeJob(lib.job.Job):
                     newest_snapshot = snapshot
 
         if newest_snapshot is None:
-            raise ValueError("No snapshot for volume \"{}\" found".format(volume_id))
+            raise ValueError("No snapshot for volume \"{}\" found".format(prod_ib_backup_data_volume_id))
 
         snapshot_size = newest_snapshot['VolumeSize']
         snapshot_id = newest_snapshot['SnapshotId']
