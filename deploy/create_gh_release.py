@@ -108,8 +108,13 @@ def generate_body(pulls, releases, tag, code_bucket_file, artifact_locations_fil
     artifacts_body += "\n\nPass the following argument to the deploy script:\n```\n--artifact-s3-keys '{}'\n```"\
                       .format(artifacts_locations_str)
 
-    artifacts_body += "\n\nPass the following pillar argument to the Salt state:\n```\npillar='{}'\n```"\
-                      .format("{{\"artifact_s3_keys\": \"{}\"}}".format(artifacts_locations_str.replace("\"", "\\\"")))
+    pillar_str = "pillar='{}'".format("{{\"artifact_s3_keys\": \"{}\"}}"
+                                      .format(artifacts_locations_str.replace("\"", "\\\"")))
+
+    artifacts_body += "\n\nPass the following pillar argument to the Salt state:\n```\n{}\n```".format(pillar_str)
+
+    artifact_body += "\n\nRun the following Salt command:\n```\nsudo salt 'salt*' state.apply " +
+                     "infobright-check-backup {}\n```".format(pillar_str)
 
     return RELEASE_BODY.format(comparison_url=comparison_url, pr_list=pr_list, artifacts_body=artifacts_body)
 
