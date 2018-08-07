@@ -10,6 +10,7 @@ Infobright backup check.
     - [New Functionality](#new-functionality)
 - [Infrastructure](#infrastructure)
 - [Development](#development)
+- [CircleCI Setup](#circleci-setup)
 
 # Overview
 Creates and tests an Infobright disk snapshot.
@@ -239,3 +240,12 @@ Lint code by running the `lint` make target:
 ```
 make lint
 ```
+
+# CircleCI Setup
+Set the following environment variables in the CircleCI build:
+
+- `GITHUB_TOKEN`: Set to the "build-release-token" value from the "GitHub - Amino Machine User" entry in 1Password
+- `AWS_ACCESS_KEY_ID`: Set to the "username" value from the "CircleCI AWS IAM" entry in 1Password
+- `AWS_SECRET_ACCESS_KEY`: Set to the "password" value from the "CircleCI AWS IAM" entry in 1Password
+
+Set the `GITHUB_TOKEN` environment variable in the CircleCI build.
