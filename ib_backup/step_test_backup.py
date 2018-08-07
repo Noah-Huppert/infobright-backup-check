@@ -65,9 +65,9 @@ class TestBackupJob(lib.job.Job):
         self.logger.debug("setup resp={}".format(setup_resp))
 
         # TODO: Run db-cli integrity test
-        ls_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                cmd='cmd.run', args=['ls', '/ibdata-restore'])
-        self.logger.debug("ls resp={}".format(ls_resp))
+        test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                  cmd='state.apply', args=['infobright.test-restored-backup'])
+        self.logger.debug("test resp={}".format(test_resp))
 
         # Tear down ib02.dev for snapshot test
         teardown_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
