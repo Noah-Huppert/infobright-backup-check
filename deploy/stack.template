@@ -107,7 +107,8 @@
                                     "ec2:CreateVolume",
                                     "ec2:CreateTags",
                                     "ec2:AttachVolume",
-                                    "ec2:CreateNetworkInterface"
+                                    "ec2:CreateNetworkInterface",
+                                    "ec2:DeleteNetworkInterface"
                                 ],
                                 "Resource": "*"
                             } ]
