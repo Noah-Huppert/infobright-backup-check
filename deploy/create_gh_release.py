@@ -70,13 +70,14 @@ Artifact S3 Bucket: `{s3_bucket}`
 Artifacts for each step:
 
 | Step Name | Location In S3 Bucket |
+| --------- | --------------------- |
 {artifacts_table}
 
 To deploy complete one of the following:
 
 - Pass the following arguments to the `deploy/deploy.py` script:
   ```
-  --env 'prod' --code-bucket '{s3_bucket}' --artifact-s3-keys '{deploy_arg}'
+  --env 'prod' --stages 'deploy' --code-bucket '{s3_bucket}' --artifact-s3-keys '{deploy_arg}'
   ```
 - Run the following Salt command:
   ```
