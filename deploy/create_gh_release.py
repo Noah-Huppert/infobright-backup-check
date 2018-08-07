@@ -95,7 +95,7 @@ def generate_body(pulls, releases, tag, archive_locations_file):
     for step_name in list(archive_locations):
         artifacts_lists.append("- `{}`: `{}`".format(step_name, archive_locations[step_name]))
 
-    artifacts_body += '\n'.join(archive_locations)
+    artifacts_body += '\n'.join(artifacts_lists)
 
     artifacts_locations_str = json.dumps(archive_locations)
     artifacts_body += "\n\nPass the following argument to the deploy script:\n```\n--artifact-s3-keys '{}'\n```"\
