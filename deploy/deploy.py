@@ -15,8 +15,8 @@ import boto3
 import inflection
 
 # Path constants (All relative)
-repo_dir = '../../'  # Path to Git repository root
-src_dir = repo_dir + 'ib-backup/ib_backup/'  # Path to source directory
+repo_dir = '../'  # Path to Git repository root
+src_dir = repo_dir + 'ib_backup/'  # Path to source directory
 
 pipfile_path = src_dir + 'Pipfile.lock'  # File which contains exact versions and hashes of all 3rd party dependencies
 
@@ -189,8 +189,14 @@ def main() -> int:
 
         # Save artifact_s3_keys if --save-artifact-s3-keys is provided
         if args.save_artifact_s3_keys:
-            with open(args.save_artifact_s3_keys, 'w') as f:
-                json.dump(artifact_s3_keys, f)
+            # Prepend s3 bucket to values
+            to_save_artifact_s3_keys = {}
+
+            for step_name in artifact_s3_keys:
+                to_save_artifact_s3_keys[step_name] = "s3://{}/{}".format(args.code_bucket, artifact_s3_keys[step_name])
+
+            with open(repo_dir + args.save_artifact_s3_keys, 'w') as f:
+                json.dump(to_save_artifact_s3_keys, f)
 
             logger.debug("Saved artifact upload locations to \"{}\"".format(args.save_artifact_s3_keys))
 
