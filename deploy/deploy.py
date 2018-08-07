@@ -102,7 +102,7 @@ def main() -> int:
     logger.debug("Configuration")
     logger.debug("=============")
 
-    for config_key in args:
+    for config_key in list(args):
         logger.debug("    {}: {}".format(config_key, args[config_key]))
 
     # AWS clients
