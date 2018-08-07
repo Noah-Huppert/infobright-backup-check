@@ -172,7 +172,7 @@ def main() -> int:
             raise ValueError("--salt-api-password argument must be provided when 'deploy' in --stages")
 
     # Print configuration
-    printed_args = args
+    printed_args = args.copy()
 
     if args.salt_api_password:
         # Redact
