@@ -174,23 +174,35 @@ def main() -> int:
     stack_name = "{}-{}".format(args.env, args.stack_name)
 
     if 'upload' in args.stages:
+        logger.debug("Running upload stage")
+
         # Build artifacts
         artifact_names = build_artifacts(logger)
+
+        logger.debug("Built artifacts, locations={}".format(artifact_names))
 
         # Upload artifacts
         artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
                                             code_bucket=args.code_bucket, env=args.env)
+
+        logger.debug("Uploaded artifacts, locations={}".format(artifact_s3_keys))
 
         # Save artifact_s3_keys if --save-artifact-s3-keys is provided
         if args.save_artifact_s3_keys:
             with open(args.save_artifact_s3_keys, 'w') as f:
                 json.dump(artifact_s3_keys, f)
 
+            logger.debug("Saved artifact upload locations to \"{}\"".format(args.save_artifact_s3_keys))
+
     if 'deploy' in args.stages:
+        logger.debug("Running deploy stage")
+
         # Deploy CloudFormation stack
         deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
                                     stack_name=stack_name, code_bucket=args.code_bucket, subnet_id=args.subnet_id,
                                     security_group_id=args.security_group_id, aws_profile=args.aws_profile)
+
+        logger.debug("Ran deploy")
 
     return 0
 
