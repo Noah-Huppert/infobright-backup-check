@@ -68,7 +68,7 @@ jobs:
 
       - run:
           name: Creating GitHub release
-          command: ./deploy/create_gh_release.py --release --archive-locations-file artifact-s3-keys.json
+          command: ./deploy/create_gh_release.py --release --artifact-locations-file artifact-s3-keys.json
 
 workflows:
   version: 2

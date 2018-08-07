@@ -65,13 +65,13 @@ RELEASE_BODY = """
 """
 
 
-def generate_body(pulls, releases, tag, archive_locations_file):
+def generate_body(pulls, releases, tag, artifact_locations_file):
     """ Create GitHub release body
     Args:
         - pulls: List of pull requests
         - releases: GitHub release for repo
         - tag: GitHub release tag
-        - archive_locations_file: File containing the locations in S3 of the lambda deployment artifacts
+        - artifact_locations_file: File containing the locations in S3 of the lambda deployment artifacts
     """
     # Get compare url
     tree_url = TREE_URL + '/{}'.format(tag)
@@ -88,21 +88,23 @@ def generate_body(pulls, releases, tag, archive_locations_file):
     artifacts_body = ""
     artifacts_lists = []
 
-    archive_locations = None
-    with open(archive_locations_file, 'r') as f:
-        archive_locations = json.load(f)
+    artifact_locations = None
+    with open(artifact_locations_file, 'r') as f:
+        artifact_locations = json.load(f)
 
-    for step_name in list(archive_locations):
-        artifacts_lists.append("- `{}`: `{}`".format(step_name, archive_locations[step_name]))
+    for step_name in list(artifact_locations):
+        artifacts_lists.append("- `{}`: `{}`".format(step_name, artifact_locations[step_name]))
 
     artifacts_body += '\n'.join(artifacts_lists)
 
-    artifacts_locations_str = json.dumps(archive_locations)
+    artifacts_locations_str = json.dumps(artifact_locations)
     artifacts_body += "\n\nPass the following argument to the deploy script:\n```\n--artifact-s3-keys '{}'\n```"\
                       .format(artifacts_locations_str)
 
     artifacts_body += "\n\nPass the following pillar argument to the Salt state:\n```\npillar='{}'\n```"\
-                      .format(json.dumps({ "artifact_s3_keys": artifacts_locations }))
+                      .format(json.dumps({
+                          "artifact_s3_keys": artifact_locations
+                      }))
 
     return RELEASE_BODY.format(comparison_url=comparison_url, pr_list=pr_list, artifacts_body=artifacts_body)
 
@@ -151,7 +153,7 @@ def get_parser():
     parser.add_argument('--release', action='store_true',
                         help='Given a release tag, create a Github release with all of the PRs since the last release')
     parser.add_argument('--tag', nargs=1, help='Used in conjunction with --release')
-    parser.add_argument('--archive-locations-file', help='File which contains locations of artifacts in S3')
+    parser.add_argument('--artifact-locations-file', help='File which contains locations of artifacts in S3')
     parser.add_argument('--dry-run', action='store_true', help='Dry run the release')
     return parser
 
@@ -171,7 +173,7 @@ if __name__ == "__main__":
     if args.release:
         # Get pull requests since last release
         pulls_result = get_pulls(releases_result)
-        body = generate_body(pulls_result, releases_result, tag, args.archive_locations_file)
+        body = generate_body(pulls_result, releases_result, tag, args.artifact_locations_file)
         create_release(tag, body, args.dry_run)
     elif tag:
         # Used for exporting the value to be used in CircleCI
