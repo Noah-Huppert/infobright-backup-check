@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/aminopay/infobright-backup-check.svg?style=svg)](https://circleci.com/gh/aminopay/infobright-backup-check)  
+
 # IB Backup
 Infobright backup.
 
