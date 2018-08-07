@@ -31,6 +31,7 @@ def get_auth_token(host: str, username: str, password: str) -> str:
     resp = requests.post(req_url, headers=req_headers, data=req_body)
 
     # Parse response
+    print(resp.content)
     resp_body = resp.json()
     print(resp_body)
 
