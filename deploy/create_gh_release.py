@@ -81,9 +81,8 @@ To deploy complete one of the following:
   ```
 - Run the following Salt command:
   ```
-  # sudo salt 'salt*' state.apply inforbright-backup-check \
-      pillar='{{ \"artifact_s3_keys\": \"{salt_pillar_val}\" }}' \
-      test=True
+  # sudo salt 'salt*' state.apply infobright-backup-check \
+pillar='{{ \"artifact_s3_keys\": \"{salt_pillar_val}\" }}' test=True
   ```
 """
 
