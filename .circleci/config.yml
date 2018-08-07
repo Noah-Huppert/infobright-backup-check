@@ -58,15 +58,14 @@ jobs:
           name: Creating GitHub release
           command: ./deploy/create_gh_release.py --release --archive-locations-file artifact-s3-keys.json
 
-
-
 workflows:
   version: 2
   lint_package_and_upload:
-    - lint
-    - package_and_upload:
-        requires:
-          - lint
-        filters:
-          branches:
-            only: master
+    jobs:
+      - lint
+      - package_and_upload:
+          requires:
+            - lint
+          filters:
+            branches:
+              only: master
