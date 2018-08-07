@@ -86,17 +86,24 @@ def main() -> int:
 
     # Set default --subnet-id depending on --env
     if args.subnet_id == env_dependant_placeholder:
-        if args.env in ['dev', 'prod']:
-            args.subnet_id = DEV_PROD_SUBNET_ID
-        else:
+        if args.env in 'sand':
             args.subnet_id = SAND_SUBNET_ID
+        else:
+            args.subnet_id = DEV_PROD_SUBNET_ID
 
     # Set default --security-group-id depending on --env
     if args.security_group_id == env_dependant_placeholder:
-        if args.security_group_id in ['dev', 'prod']:
-            args.security_group_id = DEV_PROD_SECURITY_GROUP_ID
-        else:
+        if args.security_group_id in 'sand'
             args.security_group_id = SAND_SECURITY_GROUP_ID
+        else:
+            args.security_group_id = DEV_PROD_SECURITY_GROUP_ID
+
+    # Print configuration
+    logger.debug("Configuration")
+    logger.debug("=============")
+
+    for config_key in args:
+        logger.debug("    {}: {}".format(config_key, args[config_key]))
 
     # AWS clients
     aws_profile_args = {}
