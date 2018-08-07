@@ -49,6 +49,14 @@ jobs:
           command: pip install awscli
 
       - run:
+          name: Installing Pipenv
+          command: pip install pipenv
+
+      - run:
+          name: Installing Dependencies
+          command: make install
+
+      - run:
           name: Packaging and uploading
           command: |
             cd deploy/
