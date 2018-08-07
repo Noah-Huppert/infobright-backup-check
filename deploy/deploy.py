@@ -7,6 +7,7 @@ import os
 import os.path
 import hashlib
 import subprocess
+import json
 from typing import Dict, List
 
 from git import Repo
@@ -57,23 +58,35 @@ def main() -> int:
     env_dependant_placeholder = '<depends on --env>'
 
     parser = argparse.ArgumentParser(description="Deploy script")
+    parser.add_argument('--stages',
+                        help="Which deploy stages to run. The 'upload' stage builds and uploads lambda function " +
+                             "deployment artifacts. The 'deploy' stage deploys a CloudFormation template for the " +
+                             "lambda function",
+                        choices=['upload', 'deploy'],
+                        action='append')
+    parser.add_argument('--artifact-s3-keys',
+                        help="(Required if only stage is 'deploy') String representing JSON object which holds " +
+                             "locations of step build artifacts in S3. Object keys are step " +
+                             "names (Names: {}), all step names must be provided. Object ".format(", ".join(steps)) +
+                             "values are AWS S3 URIs to step build artifacts")
     parser.add_argument('--aws-profile',
-                        help="AWS credential profile")
+                        help="(Required by all stages) AWS credential profile")
     parser.add_argument('--env',
                         choices=['sand', 'dev', 'prod'],
                         default='dev',
-                        help="Environment stack is being deployed to")
+                        help="(Required by all stages) Environment stack is being deployed to")
     parser.add_argument('--stack-name',
-                        help="Base name of CloudFormation stack to deploy, will be prefixed with the environment",
+                        help="(Required by all stages) Base name of CloudFormation stack to deploy, " +
+                        "will be prefixed with the environment",
                         default='ib-backup')
     parser.add_argument('--code-bucket',
-                        help="S3 bucket to upload code into",
+                        help="(Required by all stages) S3 bucket to upload code into",
                         default=env_dependant_placeholder)
     parser.add_argument('--subnet-id',
-                        help="Id of subnet which has access to the development Salt master",
+                        help="(Required by 'deploy' stage) Id of subnet which has access to the development Salt master",
                         default=env_dependant_placeholder)
     parser.add_argument('--security-group-id',
-                        help="Id of security group which has access to the development Salt master",
+                        help="(Required by 'deploy' stage) Id of security group which has access to the development Salt master",
                         default=env_dependant_placeholder)
     args = parser.parse_args()
 
@@ -98,6 +111,42 @@ def main() -> int:
         else:
             args.security_group_id = DEV_PROD_SECURITY_GROUP_ID
 
+    # Set --stages argument to default if not provided
+    if not args.stages:
+        args.stages = ['upload', 'stages']
+
+    # Check --artifact-s3-keys if --stages == ['deploy']
+    artifact_s3_keys = None
+    if args.stages == ['deploy']:
+        # If empty
+        if not args.artifact_s3_keys:
+            raise ValueError("--artifact-s3-keys must be provided if 'deploy' is the only stage passed via the " +
+                             "--stages argument")
+
+        # Try deserializing
+        try:
+            artifact_s3_keys = json.loads(args.artifact_s3_keys)
+        except Exception as e:
+            logger.error("Error parsing --artifact-s3-keys argument as JSON")
+            raise e
+
+        # Check is dict
+        if type(artifact_s3_keys) != dict:
+            raise ValueError("--artifact-s3-keys must deserialize to type dict, was: {}".format(type(artifact_s3_keys)))
+
+        # Check each step is present
+        expected_steps = set(steps)
+        actual_steps = set(artifact_s3_keys)
+
+        if expected_steps != actual_steps:
+            raise ValueError("--artifact-s3-keys must contain a key for each step, expected keys: {}, actual keys: {}"
+                             .format(expected_keys, actual_keys))
+    else:
+        # If --stages != ['deploy'] notify user that argument will not do anything
+        if args.artifact_s3_keys:
+            raise ValueError("--artifact-s3-keys argument provided but --stages != ['deploy'], --artifact-s3-keys " +
+                             "values will not be used")
+
     # Print configuration
     logger.debug("Configuration: {}".format(args))
 
@@ -114,17 +163,19 @@ def main() -> int:
     # Stack name
     stack_name = "{}-{}".format(args.env, args.stack_name)
 
-    # Build artifacts
-    artifact_names = build_artifacts(logger)
+    if 'upload' in args.stages:
+        # Build artifacts
+        artifact_names = build_artifacts(logger)
 
-    # Upload artifacts
-    artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
+        # Upload artifacts
+        artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
                                         code_bucket=args.code_bucket, env=args.env)
 
-    # Deploy CloudFormation stack
-    deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
-                                stack_name=stack_name, code_bucket=args.code_bucket, subnet_id=args.subnet_id,
-                                security_group_id=args.security_group_id, aws_profile=args.aws_profile)
+    if 'deploy' in args.stages:
+        # Deploy CloudFormation stack
+        deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
+                                    stack_name=stack_name, code_bucket=args.code_bucket, subnet_id=args.subnet_id,
+                                    security_group_id=args.security_group_id, aws_profile=args.aws_profile)
 
     return 0
 
@@ -227,7 +278,9 @@ def upload_artifacts(logger: logging.Logger, s3, artifact_names: Dict[str, str],
         - env: Name of deployment environment
 
     Returns:
-        - S3 keys step artifacts are uploaded under
+        - S3 keys for step artifacts
+            - Dict keys are step names
+            - Dict valuess are S3 keys
     """
     s3_keys = {}
 
@@ -267,7 +320,10 @@ def build_artifacts(logger: logging.Logger) -> Dict[str, str]:
     Args:
         - logger
 
-    Returns: Dict of step artifact locations
+    Returns:
+        - Dict of step artifact locations on disk
+            - Dict keys are step names
+            - Dict values are zip file paths
     """
     git_head_sha = get_git_head_sha()[0:7]
 
