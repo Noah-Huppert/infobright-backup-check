@@ -93,6 +93,10 @@ def main() -> int:
                         help="(Required by 'deploy' stage) Id of security group which has access to the development " +
                              "Salt master",
                         default=env_dependant_placeholder)
+    parser.add_argument('--salt-api-user',
+                        help="(Required by 'deploy' stage) Salt API user")
+    parser.add_argument('--salt-api-password',
+                        help="(Required by 'deploy' state) Salt API password")
     args = parser.parse_args()
 
     # Set default --code-bucket depending on --env
@@ -157,8 +161,22 @@ def main() -> int:
         raise ValueError("--save-artifact-s3-keys argument provided but 'upload' not in --stages, " +
                          "--save-artifact-s3-keys value will not be used")
 
+    # Check --salt-api-{user,password} arguments provided id 'deploy' in --stages
+    if 'deploy' in args.stages:
+        if not args.salt_api_user:
+            raise ValueError("--salt-api-user argument must be provided when 'deploy' in --stages")
+
+        if not args.salt_api_password:
+            raise ValueError("--salt-api-password argument must be provided when 'deploy' in --stages")
+
     # Print configuration
-    logger.debug("Configuration: {}".format(args))
+    printed_args = args
+
+    if args.salt_api_password:
+        # Redact
+        printed_args.salt_api_password = '[REDACTED]'
+
+    logger.debug("Configuration: {}".format(printed_args))
 
     # AWS clients
     aws_profile_args = {}
@@ -206,7 +224,8 @@ def main() -> int:
         # Deploy CloudFormation stack
         deploy_cloudformation_stack(logger=logger, artifact_s3_keys=artifact_s3_keys, env=args.env,
                                     stack_name=stack_name, code_bucket=args.code_bucket, subnet_id=args.subnet_id,
-                                    security_group_id=args.security_group_id, aws_profile=args.aws_profile)
+                                    security_group_id=args.security_group_id, salt_api_user=args.salt_api_user,
+                                    salt_api_password=args.salt_api_password, aws_profile=args.aws_profile)
 
         logger.debug("Ran deploy")
 
@@ -215,7 +234,7 @@ def main() -> int:
 
 def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[str, str], env: str,
                                 stack_name: str, code_bucket: str, subnet_id: str, security_group_id: str,
-                                aws_profile: str = None):
+                                salt_api_user: str, salt_api_password, aws_profile: str = None):
     """ Deploys a CloudFormation stack
     Args:
         - logger
@@ -235,6 +254,8 @@ def deploy_cloudformation_stack(logger: logging.Logger, artifact_s3_keys: Dict[s
     param_overrides = {
         'Environment': env,
         'StepLambdaCodeBucket': code_bucket,
+        'SaltAPIUser': salt_api_user,
+        'SaltAPIPassword': salt_api_password,
         'SaltDevSubnetId': subnet_id,
         'SaltDevSecurityGroupId': security_group_id
     }
