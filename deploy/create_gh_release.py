@@ -94,33 +94,34 @@ def generate_body(pulls, releases, tag, code_bucket_file, artifact_locations_fil
     with open(artifact_locations_file, 'r') as f:
         artifact_locations = json.load(f)
 
-    # Make list of artifact locations per step
-    artifacts_list = []
+    # Make table of artifact locations per step
+    artifacts_table_rows = []
     for step_name in list(artifact_locations):
-        artifacts_list.append("- `{}`: `{}`".format(step_name, artifact_locations[step_name]))
+        artifacts_table_rows.append("| `{}` | `{}` |".format(step_name, artifact_locations[step_name]))
 
     # Make string representation of artifact locations
     artifacts_locations_str = json.dumps(artifact_locations)
 
     artifacts_body = """
-    Artifact S3 Bucket: `{s3_bucket}`\n
+    Artifact S3 Bucket: `{s3_bucket}`
 
-    Artifacts for each step:\n
+    Artifacts for each step:
 
-    {artifacts_list}
+    | Step Name | Location In S3 Bucket |
+    {artifacts_table}
 
     To deploy complete one of the following:
 
-    - Pass the following argument to the `deploy/deploy.py` script:
+    - Pass the following arguments to the `deploy/deploy.py` script:
       ```
-      --artifact-s3-keys '{deploy_arg}'
+      --env 'prod' --code-bucket '{s3_bucket}' --artifact-s3-keys '{deploy_arg}'
       ```
     - Run the following Salt command:
       ```
       # sudo salt 'salt*' state.apply pillar='{{ \"artifact_s3_keys\": \"{salt_pillar_val}\" }}' test=True
       ```
     """.format(s3_bucket=code_bucket,
-               artifacts_list='\n'.join(artifacts_list),
+               artifacts_table='\n'.join(artifacts_table_rows),
                deploy_arg=artifacts_locations_str,
                salt_pillar_val=artifacts_locations_str.replace("\"", "\\\""))
 
