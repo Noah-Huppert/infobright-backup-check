@@ -69,6 +69,9 @@ def main() -> int:
                              "locations of step build artifacts in S3. Object keys are step " +
                              "names (Names: {}), all step names must be provided. Object ".format(", ".join(steps)) +
                              "values are AWS S3 URIs to step build artifacts")
+    parser.add_argument('--save-artifact-s3-keys',
+                        help="(Required by 'upload' stage) File to save step artifact S3 locations. Saved in JSON " +
+                             "format described by --artifact-s3-keys help")
     parser.add_argument('--aws-profile',
                         help="(Required by all stages) AWS credential profile")
     parser.add_argument('--env',
@@ -149,6 +152,11 @@ def main() -> int:
             raise ValueError("--artifact-s3-keys argument provided but --stages != ['deploy'], --artifact-s3-keys " +
                              "values will not be used")
 
+    # Check if --save-artifact-s3-keys is provided and 'upload' not in --stages
+    if 'upload' not in args.stages and args.save_artifact_s3_keys:
+        raise ValueError("--save-artifact-s3-keys argument provided but 'upload' not in --stages, " +
+                         "--save-artifact-s3-keys value will not be used")
+
     # Print configuration
     logger.debug("Configuration: {}".format(args))
 
@@ -172,6 +180,11 @@ def main() -> int:
         # Upload artifacts
         artifact_s3_keys = upload_artifacts(logger=logger, s3=s3, artifact_names=artifact_names, stack_name=stack_name,
                                             code_bucket=args.code_bucket, env=args.env)
+
+        # Save artifact_s3_keys if --save-artifact-s3-keys is provided
+        if args.save_artifact_s3_keys:
+            with open(args.save_artifact_s3_keys, 'w') as f:
+                json.dump(artifact_s3_keys, f)
 
     if 'deploy' in args.stages:
         # Deploy CloudFormation stack
