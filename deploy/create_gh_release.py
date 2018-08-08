@@ -79,7 +79,7 @@ To deploy complete one of the following:
   ```
   --env 'prod' --stages 'deploy' --code-bucket '{s3_bucket}' --artifact-s3-keys '{deploy_arg}'
   ```
-- Run the following Salt command:
+  - Run the following Salt command on `salt01.dev`:
   ```
   # sudo salt 'salt*' state.apply infobright-backup-check \
 pillar='{{ \"artifact_s3_keys\": \"{salt_pillar_val}\" }}' test=True
