@@ -61,17 +61,17 @@ class TestBackupJob(lib.job.Job):
         ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
         setup_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                   cmd='state.apply', args=['infobright.setup-ib-restore-test'])
+                                   cmd='state.apply', args=['infobright-backup-check.setup-ib-restore-test'])
         self.logger.debug("setup resp={}".format(setup_resp))
 
         # TODO: Run db-cli integrity test
         test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                  cmd='state.apply', args=['infobright.test-restored-backup'])
+                                cmd='state.apply', args=['infobright-backup-check.test-restored-backup'])
         self.logger.debug("test resp={}".format(test_resp))
 
         # Tear down ib02.dev for snapshot test
         teardown_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                      cmd='state.apply', args=['infobright.teardown-ib-restore-test'])
+                                      cmd='state.apply', args=['infobright-backup-check.teardown-ib-restore-test'])
         self.logger.debug("teardown resp={}".format(teardown_resp))
 
         # Detach volume
