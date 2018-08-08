@@ -69,9 +69,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
     resp = requests.post(host, headers=req_headers, json=req_data)
 
     # Parse response
-    print("salt api resp text={}".format(resp.content))
     resp_body = resp.json()
-    print("salt api resp json={}".format(resp_body))
 
     if 'return' not in resp_body:
         raise ValueError("Malformed Salt state run API response, expected 'return' key holding an array, was: {}"

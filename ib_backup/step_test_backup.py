@@ -7,6 +7,8 @@ import lib.salt
 
 import boto3
 
+UTIL_SALT_TARGET = 'util*'
+
 
 class TestBackupJob(lib.job.Job):
     """ Performs the test backup step
@@ -64,8 +66,8 @@ class TestBackupJob(lib.job.Job):
                                    cmd='state.apply', args=['infobright-backup-check.setup-ib-restore-test'])
         self.logger.debug("setup resp={}".format(setup_resp))
 
-        # TODO: Run db-cli integrity test
-        test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+        # Test snapshot integrity
+        test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=UTIL_SALT_TARGET,
                                   cmd='state.apply', args=['infobright-backup-check.test-restored-backup'])
         self.logger.debug("test resp={}".format(test_resp))
 
