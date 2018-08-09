@@ -62,7 +62,7 @@ class TestBackupJob(lib.job.Job):
         # Test snapshot integrity
         test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
                                   cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
-                                  client='local_async')
+                                  salt_client='local_async')
         raise ValueError(test_resp)
         self.logger.debug("test resp={}".format(test_resp))
 
