@@ -1,6 +1,7 @@
 import urllib.parse
 from typing import List
 import urllib.parse
+from typing import Dict
 
 import requests
 
