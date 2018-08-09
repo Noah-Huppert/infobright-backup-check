@@ -4,6 +4,7 @@ import urllib.parse
 from typing import Dict
 
 import requests
+import yaml
 
 
 def get_auth_token(host: str, username: str, password: str) -> str:
@@ -61,7 +62,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
     """
     # Make request
     req_headers = {
-        'Accept': 'application/json',
+        'Accept': 'application/x-yaml',
         'x-auth-token': auth_token
     }
     req_data = {
@@ -75,8 +76,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
     resp = requests.post(url, headers=req_headers, json=req_data)
 
     # Parse response
-    print("salt.exec, args={}, resp text={}".format(args, resp.content))
-    resp_body = resp.json()
+    resp_body = yaml.load(resp.content)
 
     if 'return' not in resp_body:
         raise ValueError("Malformed Salt state run API response, expected 'return' key holding an array, was: {}"
@@ -84,6 +84,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
 
     return resp_body['return']
 
+ 
 def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
     """ Retrieves the status of a Salt job
     Args:
@@ -103,21 +104,20 @@ def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
 
     # Make request
     req_headers = {
-        'Accept': 'application/json',
+        'Accept': 'application/x-yaml',
         'x-auth-token': auth_token
     }
     url = urllib.parse.urljoin(host, "jobs/{}".format(job_id))
 
-    resp = requests.post(url, headers=req_headers)
+    resp = requests.get(url, headers=req_headers)
 
     # Parse response
-    resp_body = resp.json()
+    resp_body = yaml.load(resp.content)
 
     if 'return' not in resp_body:
         raise ValueError("Malformed Salt API response, expected 'return' key")
 
-    resp_return = resp['return']
-    if job_id not in resp_return:
-        raise ValueError("Job Id \"{}\" not returned by Salt API".format(job_id))
+    if len(resp_body['return']) == 0:
+        raise ValueError("Expected at least 1 return result from Salt API, was: {}".format(resp_body))
 
-    return resp_return[job_id]
+    return resp['return']

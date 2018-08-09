@@ -63,24 +63,61 @@ class WaitTestCompletedJob(lib.job.Job):
         self.logger.debug("Authenticated with Salt API")
 
         # Get status of test backup Salt job
-        test_cmd_salt_job_status = lib.salt.get_job(host=salt_api_url, auth_token=salt_api_token,
-                                                    job_id=test_cmd_salt_job_id)
-        raise ValueError(test_cmd_salt_job_status)
+        job_status_resp = lib.salt.get_job(host=salt_api_url, auth_token=salt_api_token, job_id=test_cmd_salt_job_id)
 
-        # Tear down ib02.dev for snapshot test
-        ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
+        self.logger.debug("test cmd job status resp={}".format(job_status_resp))
 
-        lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
-                      args=['infobright-backup-check.teardown-ib-restore-test'])
-        self.logger.debug("Teared down Infobright development instance for test")
+        # ... Check there is exactly 1 job result returned by Salt API
+        if len(job_status_resp) != 1:
+            raise ValueError("Salt API did not return exactly 1 result for test backup command Salt job")
 
-        # Detach volume
-        ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
+        minion_job_statuses = job_status_resp[0]
 
-        self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, dev_ib_backup_instance_id={}"
-                          .format(volume_id, dev_ib_backup_instance_id))
+        # ... Check the job ran on exactly 1 minion
+        job_minions = list(minion_job_statuses)
+        if len(job_minions) != 1:
+            raise ValueError("Test backup command Salt job must run on exactly 1 minion, ran on: " +
+                             "{}".format(job_minions))
 
-        return lib.job.NextAction.TERMINATE
+        job_minion = job_minions[0]
+        job_status = minion_job_statuses[job_minion]
+
+        # ... Check the job ran exactly 1 command
+        job_cmds = list(job_status)
+        if len(job_cmds) != 1:
+            raise ValueError("Test backup command Salt job must run exactly 1 command, ran: {}".format(job_cmds))
+
+        job_cmd = job_cmds[0]
+        cmd_status = job_status[job_cmd]
+
+        # ... Check if command completed
+        if 'result' in cmd_status:
+            # Test backup command completed successfully
+            self.logger.debug("Check backup command completed")
+
+            # Detach volume
+            ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
+
+            self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, dev_ib_backup_instance_id={}"
+                              .format(volume_id, dev_ib_backup_instance_id))
+
+            # Tear down ib02.dev for snapshot test
+            ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
+
+            lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
+                          args=['infobright-backup-check.teardown-ib-restore-test'])
+            self.logger.debug("Teared down Infobright development instance for test")
+
+            # Invoke next lambda
+            self.next_lambda_event = {
+                'volume_id': volume_id,
+                'dev_ib_backup_instance_id': dev_ib_backup_instance_id
+            }
+            return lib.job.NextAction.NEXT
+        else:
+            # Still running test backup command
+            self.logger.debug("Check backup command still running")
+            return lib.job.NextAction.REPEAT
 
 
 def main(event, ctx):

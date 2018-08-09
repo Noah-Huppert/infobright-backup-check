@@ -6,3 +6,7 @@
 
 # Python dependencies
 ib_backup/build/
+
+# Python build
+__pycache__
+*.pyc

@@ -63,14 +63,20 @@ class TestBackupJob(lib.job.Job):
         test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
                                   cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
                                   salt_client='local_async')
-        raise ValueError(test_resp)
+
         self.logger.debug("test resp={}".format(test_resp))
+
+        if len(test_resp) != 1:
+            raise ValueError("Test backup command Salt invocation response did not contain exactly 1 result")
+
+        test_cmd_salt_job_id = test_resp[0]['jid']
 
         # Run next lambda
         self.next_lambda_event = {
             'volume_id': volume_id,
             'dev_ib_backup_instance_id': dev_ib_backup_instance_id,
-            'mount_point': mount_point
+            'mount_point': mount_point,
+            'test_cmd_salt_job_id': test_cmd_salt_job_id
         }
         return lib.job.NextAction.NEXT
 
