@@ -71,9 +71,8 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
         'fun': cmd,
         'arg': args
     }
-    url = urllib.parse.urljoin(host, "run")
 
-    resp = requests.post(url, headers=req_headers, json=req_data)
+    resp = requests.post(host, headers=req_headers, json=req_data)
 
     # Parse response
     resp_body = yaml.load(resp.content)
@@ -84,7 +83,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
 
     return resp_body['return']
 
- 
+
 def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
     """ Retrieves the status of a Salt job
     Args:
