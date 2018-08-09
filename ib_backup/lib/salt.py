@@ -70,8 +70,9 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
         'fun': cmd,
         'arg': args
     }
+    url = urllib.parse.urljoin(host, "run")
 
-    resp = requests.post(host, headers=req_headers, json=req_data)
+    resp = requests.post(url, headers=req_headers, json=req_data)
 
     # Parse response
     resp_body = resp.json()
