@@ -53,7 +53,7 @@ class TestBackupJob(lib.job.Job):
         self.logger.debug("Authenticated with Salt API")
 
         # Setup ib02.dev for snapshot test
-        ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
+        ib_backup_salt_target = "ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
         lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
                       args=['infobright-backup-check.setup-ib-restore-test'], tgt_type='grain')
