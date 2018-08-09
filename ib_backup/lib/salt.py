@@ -124,4 +124,4 @@ def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
     if len(resp_body['return']) == 0:
         raise ValueError("Expected at least 1 return result from Salt API, was: {}".format(resp_body))
 
-    return resp['return']
+    return resp_body['return']
