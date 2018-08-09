@@ -75,13 +75,13 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
     resp = requests.post(url, headers=req_headers, json=req_data)
 
     # Parse response
+    print("salt.exec, args={}, resp text={}".format(args, resp.content))
     resp_body = resp.json()
 
     if 'return' not in resp_body:
         raise ValueError("Malformed Salt state run API response, expected 'return' key holding an array, was: {}"
                          .format(resp_body))
 
-    print("salt.exec, args={}, resp={}".format(args, resp_body))
     return resp_body['return']
 
 def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
