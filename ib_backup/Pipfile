@@ -10,6 +10,7 @@ name = "pypi"
 requests = "*"
 "flake8" = "*"
 "boto3" = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3.6"
