@@ -5,10 +5,6 @@ import lib.job
 import lib.steps
 import lib.salt
 
-import boto3
-
-UTIL_SALT_TARGET = 'util*'
-
 
 class TestBackupJob(lib.job.Job):
     """ Performs the test backup step
@@ -51,9 +47,6 @@ class TestBackupJob(lib.job.Job):
 
         mount_point = event['mount_point']
 
-        # AWS clients
-        ec2 = boto3.client('ec2')
-
         # Authenticate with Salt API
         salt_api_token = lib.salt.get_auth_token(host=salt_api_url, username=salt_api_user, password=salt_api_password)
 
@@ -62,14 +55,15 @@ class TestBackupJob(lib.job.Job):
         # Setup ib02.dev for snapshot test
         ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
-        setup_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                   cmd='state.apply', args=['infobright-backup-check.setup-ib-restore-test'])
-        self.logger.debug("setup resp={}".format(setup_resp))
+        lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
+                      args=['infobright-backup-check.setup-ib-restore-test'])
+        self.logger.debug("Setup Infobright development instance for test")
 
         # Test snapshot integrity
         test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
                                   cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
                                   salt_client='local_async')
+
         self.logger.debug("test resp={}".format(test_resp))
 
         if len(test_resp) != 1:
@@ -84,7 +78,7 @@ class TestBackupJob(lib.job.Job):
             'mount_point': mount_point,
             'test_cmd_salt_job_id': test_cmd_salt_job_id
         }
-        return lib.job.NextAction.TERMINATE
+        return lib.job.NextAction.NEXT
 
 
 def main(event, ctx):

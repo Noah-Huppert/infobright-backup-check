@@ -44,6 +44,14 @@
             "Type": "String",
             "Description": "Location of the test backup step lambda deployment artifact in code bucket"
         },
+        "StepWaitTestCompletedCodeKey": {
+            "Type": "String",
+            "Description": "Location of the wait test completed step lambda deployment artifact in code bucket"
+        },
+        "StepWaitVolumeDetachedCodeKey": {
+            "Type": "String",
+            "Description": "Location of the wait volume detached step lambda deployment artifact in code bucket"
+        },
         "SaltAPIURL": {
             "Type": "String",
             "Default": "http://salt01.dev.code418.net:6503",
@@ -229,7 +237,7 @@
         },
 
         "StepTestBackupLambda": {
-            "DependsOn": "StepLambdaExecRole",
+            "DependsOn": [ "StepLambdaExecRole", "StepWaitTestCompletedLambda" ],
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
@@ -247,16 +255,72 @@
                     "Variables": {
                         "SALT_API_URL": { "Ref": "SaltAPIURL" },
                         "SALT_API_USER": { "Ref": "SaltAPIUser" },
-                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" }
+                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" },
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepWaitTestCompletedCodeKey" }
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
-                "Timeout": "5",
+                "Timeout": "120",
                 "VpcConfig": {
                     "SubnetIds": [ { "Ref": "SaltDevSubnetId" } ],
                     "SecurityGroupIds": [ { "Ref": "SaltDevSecurityGroupId" } ]
                 }
+            }
+        },
+
+        "StepWaitTestCompletedLambda": {
+            "DependsOn": [ "StepLambdaExecRole", "StepWaitVolumeDetachedLambda" ],
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "step-6-wait-test-completed"
+                ] ] },
+                "Description": "Waits for the Infobright backup test command to finish",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitTestCompletedCodeKey" }
+                },
+                "Handler": "step_wait_test_completed.main",
+                "Environment": {
+                    "Variables": {
+                        "SALT_API_URL": { "Ref": "SaltAPIURL" },
+                        "SALT_API_USER": { "Ref": "SaltAPIUser" },
+                        "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" },
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepWaitVolumeDetachedLambda" }
+                    }
+                },
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6",
+                "Timeout": "120",
+                "VpcConfig": {
+                    "SubnetIds": [ { "Ref": "SaltDevSubnetId" } ],
+                    "SecurityGroupIds": [ { "Ref": "SaltDevSecurityGroupId" } ]
+                }
+            }
+        },
+
+
+        "StepWaitVolumeDetachedLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "step-7-wait-volume-detached"
+                ] ] },
+                "Description": "Waits for the test volume to be detached from ib02.dev",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepTestBackupCodeKey" }
+                },
+                "Handler": "step_wait_volume_detached.main",
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6",
+                "Timeout": "120"
             }
         }
     }

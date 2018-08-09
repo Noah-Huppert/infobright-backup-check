@@ -1,5 +1,7 @@
 import urllib.parse
 from typing import List
+import urllib.parse
+from typing import Dict
 
 import requests
 import yaml
@@ -32,9 +34,7 @@ def get_auth_token(host: str, username: str, password: str) -> str:
     resp = requests.post(req_url, headers=req_headers, data=req_body)
 
     # Parse response
-    print(resp.content)
     resp_body = resp.json()
-    print(resp_body)
 
     if 'return' not in resp_body or len(resp_body['return']) != 1:
         raise ValueError("Malformed Salt auth API response, expected 'return' key containing an array with 1 entry" +
@@ -43,7 +43,7 @@ def get_auth_token(host: str, username: str, password: str) -> str:
     return resp_body['return'][0]['token']
 
 
-def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []):
+def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = [], salt_client: str = 'local'):
     """ Executes a Salt command
     Args:
         - host: Salt API host, includes uri scheme
@@ -51,6 +51,11 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
         - minion: Minion target string
         - cmd: Salt command to run
         - args: Salt command positional arguments
+        - salt_client: Salt runner client to use when executing the provided command. Defaults to 'local' which is the
+                       same as running the salt command locally.
+                       'local_async' can be used to run a command asynchronously. This client will return the ID of the
+                       job which was started. Or 0 if the job failed to start. Provide the returned ID to get_job to
+                       retrieve the result.
 
     Raises:
         - ValueError: If Salt API response is not valid
@@ -61,13 +66,14 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
         'x-auth-token': auth_token
     }
     req_data = {
-        'client': 'local',
+        'client': salt_client,
         'tgt': minion,
         'fun': cmd,
         'arg': args
     }
+    url = urllib.parse.urljoin(host, "run")
 
-    resp = requests.post(host, headers=req_headers, json=req_data)
+    resp = requests.post(url, headers=req_headers, json=req_data)
 
     # Parse response
     resp_body = yaml.load(resp.content)
@@ -78,7 +84,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
 
     return resp_body['return']
 
-
+ 
 def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
     """ Retrieves the status of a Salt job
     Args:

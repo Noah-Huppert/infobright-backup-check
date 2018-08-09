@@ -157,7 +157,8 @@ Tests the integrity of the Infobright backup.
 
 Environment variables:
 
-- `NEXT_LAMBDA_NAME`: Name of the [Wait Test Volume Detached lambda](#wait-test-volume-detached)
+- `NEXT_LAMBDA_NAME`: Name of the [Wait Test Completed lambda](#wait-test-completed)
+- `SALT_API_URL`: URL to Salt API
 - `SALT_API_USER`: User to authenticate with Salt API
 - `SALT_API_PASSWORD`: Password to authenticate with Salt API
 
@@ -169,16 +170,38 @@ Expected event:
 
 Actions:
 
-- SSH into the development Infobright replica:
-    - Mount the test volume at `/ibdata-backup`
-    - Start the `mysqld-ib` service
-    - Run a test query and ensure the actual results match the expected results
-        - Save the results of this test as the `Integrity` flag on the
-            snapshot, with the value `good` or `bad`
-    - Stop the `mysqld-ib` service
-    - Unmount the `/ibdata-backup` directory
-- Detach the test volume from the `ib02.dev` instance
-- Invoke the [Wait Test Volume Detached step](#wait-test-volume-detached)
+- Execute the `infobright-backup-check.setup-ib-restore-test` Salt state
+- Execute the `infobright-backup-check.test-restored-backup` Salt state
+- Invoke the [Wait Test Completed step](#wait-test-completed)
+
+### Wait Test Completed
+Waits for the backup integrity test command to complete.  
+
+Environment variables:
+
+- `NEXT_LAMBDA_NAME`: Name of the [Wait Test Volume Detached lambda](#wait-test-volume-detached)
+- `SALT_API_URL`: URL to Salt API
+- `SALT_API_USER`: User to authenticate with Salt API
+- `SALT_API_PASSWORD`: Password to authenticate with Salt API
+
+Expected event:
+
+- `volume_id`: Id of snapshot test volume
+- `dev_ib_backup_instance_id`: Id of development Infobright instance
+- `mount_point`: Path in file system device was attached
+- `test_cmd_salt_job_id`: ID of Salt job which is running backup test command
+
+Actions:
+
+- Get status of test command Salt job
+    - If running: Invoke this step again in 15 seconds
+    - If completed:
+        - Execute the `infobright-backup-check.teardown-ib-restore-test` Salt state
+        - Detach the test volume from the `ib02.dev` instance
+        - Get test result
+            - If test successful: Label snapshot test volume is based on as `IBBackupIntegrity=OK`
+            - If test unsuccessful: Label snapshot test volume is based on as `IBBackupIntegrity=BAD`
+        - Invoke the [Wait Test Volume Detached lambda](#wait-test-volume-detached)
 
 ### Wait Test Volume Detached
 Waits until the test volume is detached from the development Infobright replica.  
