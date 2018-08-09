@@ -43,7 +43,8 @@ def get_auth_token(host: str, username: str, password: str) -> str:
     return resp_body['return'][0]['token']
 
 
-def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = [], salt_client: str = 'local'):
+def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = [], salt_client: str = 'local',
+         tgt_type: str = None):
     """ Executes a Salt command
     Args:
         - host: Salt API host, includes uri scheme
@@ -56,6 +57,7 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
                        'local_async' can be used to run a command asynchronously. This client will return the ID of the
                        job which was started. Or 0 if the job failed to start. Provide the returned ID to get_job to
                        retrieve the result.
+        - tgt_type: Type of target statement for minion
 
     Raises:
         - ValueError: If Salt API response is not valid
@@ -71,6 +73,9 @@ def exec(host: str, auth_token: str, minion: str, cmd: str, args: List[str] = []
         'fun': cmd,
         'arg': args
     }
+
+    if tgt_type is not None:
+        req_data['tgt_type'] = tgt_type
 
     resp = requests.post(host, headers=req_headers, json=req_data)
 

@@ -56,13 +56,13 @@ class TestBackupJob(lib.job.Job):
         ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
         lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
-                      args=['infobright-backup-check.setup-ib-restore-test'])
+                      args=['infobright-backup-check.setup-ib-restore-test'], tgt_type='grain')
         self.logger.debug("Setup Infobright development instance for test")
 
         # Test snapshot integrity
         test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
                                   cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
-                                  salt_client='local_async')
+                                  salt_client='local_async', tgt_type='grain')
 
         self.logger.debug("test resp={}".format(test_resp))
 
