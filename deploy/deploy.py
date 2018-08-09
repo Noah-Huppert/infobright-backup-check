@@ -37,7 +37,7 @@ SAND_SECURITY_GROUP_ID = 'sg-b66e74fd'  # Id of security group in the sandbox wi
 # Step constants
 # Names of process steps
 steps = ['step_create_volume', 'step_wait_volume_created', 'step_attach_volume', 'step_wait_volume_attached',
-         'step_test_backup']
+         'step_test_backup', 'step_wait_test_completed', 'step_wait_volume_detached']
 
 
 def main() -> int:

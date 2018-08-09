@@ -5,11 +5,12 @@ import lib.job
 import lib.steps
 import lib.salt
 
+import boto3
 
-class TestBackupJob(lib.job.Job):
-    """ Performs the test backup step
+
+class WaitTestCompletedJob(lib.job.Job):
+    """ Performs the wait test completed step
     """
-
     def handle(self, event: Dict[str, object], ctx) -> lib.job.NextAction:
         # Get Salt API configuration
         missing_env_vars = []
@@ -47,32 +48,39 @@ class TestBackupJob(lib.job.Job):
 
         mount_point = event['mount_point']
 
+        # Get test cmd salt job id from event
+        if 'test_cmd_salt_job_id' not in event:
+            raise KeyError("event must contain \"test_cmd_salt_job_id\" field")
+
+        test_cmd_salt_job_id = event['test_cmd_salt_job_id']
+
+        # AWS clients
+        ec2 = boto3.client('ec2')
+
         # Authenticate with Salt API
         salt_api_token = lib.salt.get_auth_token(host=salt_api_url, username=salt_api_user, password=salt_api_password)
 
         self.logger.debug("Authenticated with Salt API")
 
-        # Setup ib02.dev for snapshot test
+        # Get status of test backup Salt job
+        test_cmd_salt_job_status = lib.salt.get_job(host=salt_api_url, auth_token=salt_api_token,
+                                                    job_id=test_cmd_salt_job_id)
+        raise ValueError(test_cmd_salt_job_status)
+
+        # Tear down ib02.dev for snapshot test
         ib_backup_salt_target = "G@ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
         lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
-                      args=['infobright-backup-check.setup-ib-restore-test'])
-        self.logger.debug("Setup Infobright development instance for test")
+                      args=['infobright-backup-check.teardown-ib-restore-test'])
+        self.logger.debug("Teared down Infobright development instance for test")
 
-        # Test snapshot integrity
-        test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                  cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
-                                  client='local_async')
-        raise ValueError(test_resp)
-        self.logger.debug("test resp={}".format(test_resp))
+        # Detach volume
+        ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
 
-        # Run next lambda
-        self.next_lambda_event = {
-            'volume_id': volume_id,
-            'dev_ib_backup_instance_id': dev_ib_backup_instance_id,
-            'mount_point': mount_point
-        }
-        return lib.job.NextAction.NEXT
+        self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, dev_ib_backup_instance_id={}"
+                          .format(volume_id, dev_ib_backup_instance_id))
+
+        return lib.job.NextAction.TERMINATE
 
 
 def main(event, ctx):
@@ -83,5 +91,5 @@ def main(event, ctx):
 
     Raises: Any exception
     """
-    step_job = TestBackupJob(lambda_name=lib.steps.STEP_TEST_BACKUP)
+    step_job = WaitTestCompletedJob(lambda_name=lib.steps.STEP_TEST_BACKUP)
     step_job.run(event, ctx)
