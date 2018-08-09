@@ -256,7 +256,7 @@
                         "SALT_API_URL": { "Ref": "SaltAPIURL" },
                         "SALT_API_USER": { "Ref": "SaltAPIUser" },
                         "SALT_API_PASSWORD": { "Ref": "SaltAPIPassword" },
-                        "NEXT_LAMBDA_NAME": { "Ref": "StepWaitTestCompletedCodeKey" }
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepWaitTestCompletedLambda" }
                     }
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
