@@ -82,9 +82,6 @@ class WaitTestCompletedJob(lib.job.Job):
             self.logger.error("Failed to verify integrity of database backup: {}".format(e))
 
             backup_tested_successfully = False
-        except ValueError as e:
-            self.logger.error("Error while determining test backup Salt job result status")
-            raise e
 
         # Label backup snapshot based on results of test
         backup_test_status_tag_value = 'True'

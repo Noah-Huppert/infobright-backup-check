@@ -160,7 +160,6 @@ def check_job_result(job_results: List[object]):
     Raises:
         - NoMinionResultsException: If job_results shows that not minions have run the job
         - JobFailedException: If job_results shows that minion did not run a command successfully
-        - ValueError: If job results object is not formatted correctly
     """
     # Check that at least 1 minion ran job
     if len(job_results) == 0:
@@ -170,9 +169,10 @@ def check_job_result(job_results: List[object]):
     for minion_job_results_top_obj in job_results:
         # Check object contains exactly 1 minion name
         if len(list(minion_job_results_top_obj)) != 1:
-            raise ValueError("Minion job result object did not contain exactly 1 top level key representing the " +
-                             "minion's name, minion_job_results_top_obj={}, job_results={}"
-                             .format(minion_job_results_top_obj, job_results))
+            raise NoMinionResultsException("Minion job result object did not contain exactly 1 top level key " +
+                                           "representing the minion's name, minion_job_results_top_obj={}, "
+                                           .format(minion_job_results_top_obj) + "job_results={}"
+                                           .format(job_results))
 
         # Get minion key name
         minion_name = list(minion_job_results_top_obj)[0]
@@ -183,9 +183,9 @@ def check_job_result(job_results: List[object]):
 
         # Check at least 1 command ran
         if len(cmd_names) == 0:
-            raise ValueError("Minion job results object did not contain at least 1 command status sub object" +
-                             ", minion_job_results_top_obj={}, job_results={}"
-                             .format(minion_job_results_top_obj, job_results))
+            raise NoMinionResultsException("Minion job results object did not contain at least 1 command status sub " +
+                                           "object, minion_job_results_top_obj={}, job_results={}"
+                                           .format(minion_job_results_top_obj, job_results))
 
         # Check each command minion ran succeeded
         for cmd_name in cmd_names:
