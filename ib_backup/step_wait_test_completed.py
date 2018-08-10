@@ -7,6 +7,8 @@ import lib.salt
 
 import boto3
 
+BACKUP_TEST_STATUS_TAG_NAME = 'DBBackupValid'
+
 
 class WaitTestCompletedJob(lib.job.Job):
     """ Performs the wait test completed step
@@ -67,66 +69,66 @@ class WaitTestCompletedJob(lib.job.Job):
 
         self.logger.debug("test cmd job status resp={}".format(job_status_resp))
 
-        # ... Check there is exactly 1 job result returned by Salt API
-        if len(job_status_resp) != 1:
-            raise ValueError("Salt API did not return exactly 1 result for test backup command Salt job")
+        # Check status of test backup Salt job
+        backup_tested_successfully = True
 
-        minion_job_statuses = job_status_resp[0]
-
-        # ... Check the job ran on exactly 1 minion
-        job_minions = list(minion_job_statuses)
-        if len(job_minions) != 1:
-            self.logger.debug("Test backup command has not completed running on minion")
+        try:
+            lib.salt.check_job_result(job_status_resp)
+        except lib.salt.NoMinionResultsException as e:
+            self.logger.debug("No results for test backup Salt job yet, still running")
 
             return lib.job.NextAction.REPEAT
+        except lib.salt.JobFailedException as e:
+            self.logger.error("Failed to verify integrity of database backup: {}".format(e))
 
-        job_minion = job_minions[0]
-        job_status = minion_job_statuses[job_minion]
+            backup_tested_successfully = False
+        except ValueError as e:
+            self.logger.error("Error while determining test backup Salt job result status")
+            raise e
 
-        # ... Check the job ran exactly 1 command
-        job_cmds = list(job_status)
-        if len(job_cmds) != 1:
-            raise ValueError("Test backup command Salt job must run exactly 1 command, ran: {}".format(job_cmds))
+        # Label backup snapshot based on results of test
+        backup_test_status_tag_value = 'True'
+        if not backup_tested_successfully:
+            backup_test_status_tag_value = 'False'
 
-        job_cmd = job_cmds[0]
-        cmd_status = job_status[job_cmd]
+        volume_resp = ec2.describe_volumes(VolumeIds=[volume_id])
 
-        # ... Check if command completed
-        if 'result' in cmd_status:
-            # Test backup command completed successfully
-            if not cmd_status['result']:
-                self.logger.error("Test backup command failed to verify backup integrity")
+        if len(volume_resp['Volumes']) == 0:
+            raise ValueError("Could not find test backup volume which we just tested")
 
-            self.logger.debug("Check backup command completed")
+        volume = volume_resp['Volumes'][0]
 
-            # Detach volume
-            ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
+        snapshot_id = volume['SnapshotId']
 
-            self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, dev_ib_backup_instance_id={}"
-                              .format(volume_id, dev_ib_backup_instance_id))
+        ec2.create_tags(Resources=[snapshot_id], Tags=[{
+            'Key': BACKUP_TEST_STATUS_TAG_NAME,
+            'Value': backup_test_status_tag_value
+        }])
 
-            # Tear down ib02.dev for snapshot test
-            ib_backup_salt_target = "ec2:instance_id:{}".format(dev_ib_backup_instance_id)
+        # Detach volume
+        ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
 
-            teardown_result = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                            cmd='state.apply',
-                                            args=['infobright-backup-check.teardown-ib-restore-test'],
-                                            tgt_type='grain')
+        self.logger.debug("Detached volume from dev Infobright instance, volume_id={}, dev_ib_backup_instance_id={}"
+                          .format(volume_id, dev_ib_backup_instance_id))
 
-            lib.salt.check_job_result(teardown_result)
+        # Tear down ib02.dev for snapshot test
+        ib_backup_salt_target = "ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
-            self.logger.debug("Teared down Infobright development instance for test, result={}".format(teardown_result))
+        teardown_result = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                        cmd='state.apply',
+                                        args=['infobright-backup-check.teardown-ib-restore-test'],
+                                        tgt_type='grain')
 
-            # Invoke next lambda
-            self.next_lambda_event = {
-                'volume_id': volume_id,
-                'dev_ib_backup_instance_id': dev_ib_backup_instance_id
-            }
-            return lib.job.NextAction.NEXT
-        else:
-            # Still running test backup command
-            self.logger.debug("Check backup command still running")
-            return lib.job.NextAction.REPEAT
+        lib.salt.check_job_result(teardown_result)
+
+        self.logger.debug("Teared down Infobright development instance for test, result={}".format(teardown_result))
+
+        # Invoke next lambda
+        self.next_lambda_event = {
+            'volume_id': volume_id,
+            'dev_ib_backup_instance_id': dev_ib_backup_instance_id
+        }
+        return lib.job.NextAction.NEXT
 
 
 def main(event, ctx):

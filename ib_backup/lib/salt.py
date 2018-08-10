@@ -127,6 +127,18 @@ def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
     return resp_body['return']
 
 
+class NoMinionResultsException(Exception):
+    """ Indicates that no minions have run a Salt job
+    """
+    pass
+
+
+class JobFailedException(Exception):
+    """ Indicates that a Salt job did not run successfully
+    """
+    pass
+
+
 def check_job_result(job_results: List[object]):
     """ Checks a Salt job result to ensure it completed successfully
     Args:
@@ -146,11 +158,13 @@ def check_job_result(job_results: List[object]):
                                       - stdout: Regular output
 
     Raises:
-        - ValueError: If a command failed to run successfully
+        - NoMinionResultsException: If job_results shows that not minions have run the job
+        - JobFailedException: If job_results shows that minion did not run a command successfully
+        - ValueError: If job results object is not formatted correctly
     """
     # Check that at least 1 minion ran job
     if len(job_results) == 0:
-        raise ValueError("No minions ran job, job_results={}".format(job_results))
+        raise NoMinionResultsException("No minions ran job, job_results={}".format(job_results))
 
     # Check each minion exited successfully
     for minion_job_results_top_obj in job_results:
@@ -178,6 +192,6 @@ def check_job_result(job_results: List[object]):
             cmd_result = minion_job_results[cmd_name]
 
             if not cmd_result['result']:
-                raise ValueError("Minion \"{}\" failed to run command={}, minion_job_results_top_obj={},"
+                raise JobFailedException("Minion \"{}\" failed to run command={}, minion_job_results_top_obj={},"
                                  .format(minion_name, cmd_result, minion_job_results_top_obj) +
                                  "job_results={}".format(job_results))
