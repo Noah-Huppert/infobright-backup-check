@@ -93,6 +93,9 @@ class WaitTestCompletedJob(lib.job.Job):
         # ... Check if command completed
         if 'result' in cmd_status:
             # Test backup command completed successfully
+            if not cmd_status['status']:
+                self.logger.error("Test backup command failed to verify backup integrity")
+
             self.logger.debug("Check backup command completed")
 
             # Detach volume
