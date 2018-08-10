@@ -111,6 +111,9 @@ class WaitTestCompletedJob(lib.job.Job):
                                             cmd='state.apply',
                                             args=['infobright-backup-check.teardown-ib-restore-test'],
                                             tgt_type='grain')
+
+            lib.salt.check_job_result(teardown_result)
+
             self.logger.debug("Teared down Infobright development instance for test, result={}".format(teardown_result))
 
             # Invoke next lambda

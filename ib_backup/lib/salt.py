@@ -1,7 +1,7 @@
 import urllib.parse
 from typing import List
 import urllib.parse
-from typing import Dict
+from typing import Dict, List
 
 import requests
 import yaml
@@ -125,3 +125,59 @@ def get_job(host: str, auth_token: str, job_id: str) -> Dict[str, object]:
         raise ValueError("Expected at least 1 return result from Salt API, was: {}".format(resp_body))
 
     return resp_body['return']
+
+
+def check_job_result(job_results: List[object]):
+    """ Checks a Salt job result to ensure it completed successfully
+    Args:
+        - job_result: Salt API job result. Should be an array of objects.
+                          - Each of these objects will have a top level key which is the name of the minion the result
+                            is for.
+                          - Inside these minion result objects there is a key for each command that was run
+                          - Inside each of these command result objects the following keys will exist:
+                                - __run_num__: Order command was run in
+                                - comment: Note about command execution
+                                - result: True if command succeeded, false if failed
+                                - changes: Only shows if command got to run, object that contains the following
+                                           sub fields:
+                                      - pid: Process id
+                                      - retcode: Return code, 0 if success
+                                      - stderr: Error output
+                                      - stdout: Regular output
+
+    Raises:
+        - ValueError: If a command failed to run successfully
+    """
+    # Check that at least 1 minion ran job
+    if len(job_results) == 0:
+        raise ValueError("No minions ran job, job_results={}".format(job_results))
+
+    # Check each minion exited successfully
+    for minion_job_results_top_obj in job_results:
+        # Check object contains exactly 1 minion name
+        if len(list(minion_job_results_top_obj)) != 1:
+            raise ValueError("Minion job result object did not contain exactly 1 top level key representing the " +
+                             "minion's name, minion_job_results_top_obj={}, job_results={}"
+                             .format(minion_job_results_top_obj, job_results))
+
+        # Get minion key name
+        minion_name = list(minion_job_results_top_obj)[0]
+        minion_job_results = minion_job_results_top_obj[minion_name]
+
+        # Get names of commands minion ran
+        cmd_names = list(minion_job_results)
+
+        # Check at least 1 command ran
+        if len(cmd_names) == 0:
+            raise ValueError("Minion job results object did not contain at least 1 command status sub object" +
+                             ", minion_job_results_top_obj={}, job_results={}"
+                             .format(minion_job_results_top_obj, job_results))
+
+        # Check each command minion ran succeeded
+        for cmd_name in cmd_names:
+            cmd_result = minion_job_results[cmd_name]
+
+            if not cmd_result['result']:
+                raise ValueError("Minion \"{}\" failed to run command={}, minion_job_results_top_obj={},"
+                                 .format(minion_name, cmd_result, minion_job_results_top_obj) +
+                                 "job_results={}".format(job_results))

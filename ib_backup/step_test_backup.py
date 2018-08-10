@@ -58,6 +58,9 @@ class TestBackupJob(lib.job.Job):
         setup_result = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
                                      cmd='state.apply', args=['infobright-backup-check.setup-ib-restore-test'],
                                      tgt_type='grain')
+
+        lib.salt.check_job_result(setup_result)
+
         self.logger.debug("Setup Infobright development instance for test, result={}".format(setup_result))
 
         # Test snapshot integrity
