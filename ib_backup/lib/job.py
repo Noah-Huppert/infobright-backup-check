@@ -48,7 +48,7 @@ class Job:
         - next_lambda_event (Dict[str, object]): Required if `handle` returns NextAction.NEXT, The event to provide to
             the lambda specified by next_lambda_name, None if no lambda should be triggered after
         - max_iteration_count (int): Required if `handle` returns NextAction.REPEAT, maximum number of times a lambda
-            can repeat before being considered repeating infinitely, set to -1 for infinite
+            can repeat before being considered repeating infinitely
         - repeat_delay (int): Required if `handle` returns NextAction.REPEAT, Number of seconds a job will wait before
             invoking itself again, default to 15 seconds
         - logger (logging.Logger): Logger for lambda
@@ -100,7 +100,7 @@ class Job:
             iteration_count = event['iteration_count']
 
         # Check iteration count is not over max
-        if self.max_iteration_count != -1 and iteration_count > self.max_iteration_count:
+        if iteration_count > self.max_iteration_count:
             raise ValueError("Lambda invoked too many times in a row, iteration_count={}, max_iteration_count={}"
                              .format(iteration_count, self.max_iteration_count))
 
