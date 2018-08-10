@@ -76,8 +76,9 @@ class WaitTestCompletedJob(lib.job.Job):
         # ... Check the job ran on exactly 1 minion
         job_minions = list(minion_job_statuses)
         if len(job_minions) != 1:
-            raise ValueError("Test backup command Salt job must run on exactly 1 minion, ran on: " +
-                             "{}".format(job_minions))
+            self.logger.debug("Test backup command has not completed running on minion")
+
+            return lib.job.NextAction.REPEAT
 
         job_minion = job_minions[0]
         job_status = minion_job_statuses[job_minion]
