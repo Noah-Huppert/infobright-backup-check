@@ -52,6 +52,10 @@
             "Type": "String",
             "Description": "Location of the wait volume detached step lambda deployment artifact in code bucket"
         },
+        "StepCleanupCodeKey": {
+            "Type": "String",
+            "Description": "Location of the cleanup step lambda deployment artifact in code bucket"
+        },
         "SaltAPIURL": {
             "Type": "String",
             "Default": "http://salt01.dev.code418.net:6503",
@@ -154,7 +158,7 @@
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
-                "Timeout": "5"
+                "Timeout": "60"
             }
         },
 
@@ -206,7 +210,7 @@
                 },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
-                "Timeout": "5"
+                "Timeout": "60"
             }
         },
 
@@ -302,9 +306,8 @@
             }
         },
 
-
         "StepWaitVolumeDetachedLambda": {
-            "DependsOn": "StepLambdaExecRole",
+            "DependsOn": [ "StepLambdaExecRole", "StepCleanupLambda" ],
             "Type": "AWS::Lambda::Function",
             "Properties": {
                 "FunctionName": { "Fn::Join": [ "-", [
@@ -318,9 +321,35 @@
                     "S3Key": { "Ref": "StepTestBackupCodeKey" }
                 },
                 "Handler": "step_wait_volume_detached.main",
+                "Environment": {
+                    "Variables": {
+                        "NEXT_LAMBDA_NAME": { "Ref": "StepCleanupLambda" }
+                    }
+                },
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
                 "Runtime": "python3.6",
                 "Timeout": "120"
+            }
+        },
+
+        "StepCleanupLambda": {
+            "DependsOn": "StepLambdaExecRole",
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": { "Fn::Join": [ "-", [
+                    { "Ref": "Environment" },
+                    { "Ref": "ProcessName" },
+                    "step-8-cleanup"
+                ] ] },
+                "Description": "Deletes the backup test volume",
+                "Code": {
+                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepCleanupCodeKey" }
+                },
+                "Handler": "step_cleanup.main",
+                "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },
+                "Runtime": "python3.6",
+                "Timeout": "60"
             }
         }
     }

@@ -139,5 +139,5 @@ def main(event, ctx):
 
     Raises: Any exception
     """
-    step_job = WaitTestCompletedJob(lambda_name=lib.steps.STEP_TEST_BACKUP)
+    step_job = WaitTestCompletedJob(lambda_name=lib.steps.STEP_WAIT_TEST_COMPLETED)
     step_job.run(event, ctx)
