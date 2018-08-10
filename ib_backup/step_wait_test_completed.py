@@ -97,6 +97,9 @@ class WaitTestCompletedJob(lib.job.Job):
 
         snapshot_id = volume['SnapshotId']
 
+        self.logger.debug("Adding db backup test command result tag to \"{}={}\" to snapshot_id={}"
+                          .format(BACKUP_TEST_STATUS_TAG_NAME, backup_test_status_tag_value, snapshot_id))
+
         ec2.create_tags(Resources=[snapshot_id], Tags=[{
             'Key': BACKUP_TEST_STATUS_TAG_NAME,
             'Value': backup_test_status_tag_value
