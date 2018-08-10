@@ -107,9 +107,11 @@ class WaitTestCompletedJob(lib.job.Job):
             # Tear down ib02.dev for snapshot test
             ib_backup_salt_target = "ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
-            lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
-                          args=['infobright-backup-check.teardown-ib-restore-test'], tgt_type='grain')
-            self.logger.debug("Teared down Infobright development instance for test")
+            teardown_result = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                            cmd='state.apply',
+                                            args=['infobright-backup-check.teardown-ib-restore-test'],
+                                            tgt_type='grain')
+            self.logger.debug("Teared down Infobright development instance for test, result={}".format(teardown_result))
 
             # Invoke next lambda
             self.next_lambda_event = {

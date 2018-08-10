@@ -55,21 +55,22 @@ class TestBackupJob(lib.job.Job):
         # Setup ib02.dev for snapshot test
         ib_backup_salt_target = "ec2:instance_id:{}".format(dev_ib_backup_instance_id)
 
-        lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target, cmd='state.apply',
-                      args=['infobright-backup-check.setup-ib-restore-test'], tgt_type='grain')
-        self.logger.debug("Setup Infobright development instance for test")
+        setup_result = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                     cmd='state.apply', args=['infobright-backup-check.setup-ib-restore-test'],
+                                     tgt_type='grain')
+        self.logger.debug("Setup Infobright development instance for test, result={}".format(setup_result))
 
         # Test snapshot integrity
-        test_resp = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
-                                  cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
-                                  salt_client='local_async', tgt_type='grain')
+        test_result = lib.salt.exec(host=salt_api_url, auth_token=salt_api_token, minion=ib_backup_salt_target,
+                                    cmd='state.apply', args=['infobright-backup-check.test-restored-backup'],
+                                    salt_client='local_async', tgt_type='grain')
 
-        self.logger.debug("test resp={}".format(test_resp))
+        self.logger.debug("Test result={}".format(test_result))
 
-        if len(test_resp) != 1:
+        if len(test_result) != 1:
             raise ValueError("Test backup command Salt invocation response did not contain exactly 1 result")
 
-        test_cmd_salt_job_id = test_resp[0]['jid']
+        test_cmd_salt_job_id = test_result[0]['jid']
 
         # Run next lambda
         self.next_lambda_event = {
