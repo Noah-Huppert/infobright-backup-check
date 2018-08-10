@@ -1,4 +1,3 @@
-import os
 from typing import Dict
 
 import lib.job
@@ -30,6 +29,9 @@ class CleanupJob(lib.job.Job):
         ec2.delete_volume(VolumeId=volume_id)
 
         self.logger.debug("Deleted test volume, volume_id={}".format(volume_id))
+
+        # TODO: Stop ib backup instance
+        self.logger.debug("TODO: Stop dev_ib_backup_instance_id={}".format(dev_ib_backup_instance_id))
 
         return lib.job.NextAction.TERMINATE
 
