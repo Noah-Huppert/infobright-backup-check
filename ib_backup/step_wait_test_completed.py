@@ -1,5 +1,6 @@
 import os
 from typing import Dict
+import time
 
 import lib.job
 import lib.steps
@@ -104,6 +105,15 @@ class WaitTestCompletedJob(lib.job.Job):
             'Key': BACKUP_TEST_STATUS_TAG_NAME,
             'Value': backup_test_status_tag_value
         }])
+
+        # Publish datadog statistic
+        unix_time = int(time.time())
+        datadog_metric_value = 1
+        if not backup_test_status_tag_value:
+            datadog_metric_value = 0
+
+        self.logger.info("MONITORING|{}|{}|gauge|infobright_backup_valid|#snapshot_id:{}"
+                         .format(unix_time, datadog_metric_value, snapshot_id))
 
         # Detach volume
         ec2.detach_volume(Device=mount_point, InstanceId=dev_ib_backup_instance_id, VolumeId=volume_id)
