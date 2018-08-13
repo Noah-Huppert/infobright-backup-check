@@ -42,9 +42,17 @@ class WaitVolumeDetachedStep(lib.job.Job):
         # Get attachment object
         attachments = volume['Attachments']
 
-        if len(attachments) == 0:
-            raise ValueError("Test volume as no attachments, volume={}".format(volume))
+        # Setup next lambda event
+        self.next_lambda_event = {
+            'volume_id': volume_id,
+            'dev_ib_backup_instance_id': dev_ib_backup_instance_id
+        }
 
+        # If no attachments, successfully detached
+        if len(attachments) == 0:
+            return lib.job.NextAction.REPEAT
+
+        # If attachments, get status of attachment b/c it could be detached
         instance_attachment = None
 
         for attachment in attachments:
@@ -62,13 +70,7 @@ class WaitVolumeDetachedStep(lib.job.Job):
         if instance_attachment['State'] == 'detached':
             self.logger.debug("volume detached")
 
-            # Invoke next lambda
-            self.next_lambda_event = {
-                'volume_id': volume_id,
-                'dev_ib_backup_instance_id': dev_ib_backup_instance_id
-            }
-
-            return lib.job.NextAction.TERMINATE
+            return lib.job.NextAction.NEXT
         else:  # Still detaching
             self.logger.debug("volume still detaching")
 
