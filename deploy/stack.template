@@ -318,7 +318,7 @@
                 "Description": "Waits for the test volume to be detached from ib02.dev",
                 "Code": {
                     "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepTestBackupCodeKey" }
+                    "S3Key": { "Ref": "StepWaitVolumeDetachedCodeKey" }
                 },
                 "Handler": "step_wait_volume_detached.main",
                 "Environment": {
