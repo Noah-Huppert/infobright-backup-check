@@ -24,7 +24,9 @@ At the end of this process the status of the Infobright backup is recorded in 2 
 # Deploy
 CircleCI will create a GitHub release for every commit pushed to the `master` branch.  
 
-Each release provides the exact command one should run to deploy that release to AWS.
+Each release provides the exact command one should run to deploy that release to AWS.  
+
+[GitHub releases page](https://github.com/aminopay/infobright-backup-check/releases).
 
 # View Logs
 Logs can be found in [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:prefix=/aws/lambda/dev-ib).
