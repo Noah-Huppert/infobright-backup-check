@@ -6,6 +6,7 @@ Details for running the Infobright Backup Check process.
 - [Deploy](#deploy)
 - [View Logs](#view-logs)
 - [Debug Run Errors](#debug-run-errors)
+- [Debug Database Backup Test](#debug-database-backup-test)
 
 # Infrastructure Overview
 The Infobright Backup Check process is run by a series of AWS Lambda functions.  
@@ -42,3 +43,27 @@ Invoked lambda, name=<NEXT LAMBDA NAME>, event={ ... }
 
 Look at the logs for the lambda name in that log statement. Continue following the log trail until you reach a Lambda 
 which has errors in its logs.
+
+# Debug Database Backup Test
+If:
+
+- The `infobright_backup_valid` metric in Datadog equals `0`
+- The `DBBackupValid` tag equals `False`
+
+This means that the Infobright Backup Check process ran, and found an error with the Infobright backup.  
+
+To see what is wrong with the Infobright backup check [the logs for the step 6 Lambda](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:prefix=/aws/lambda/dev-ib-backup-step-6).  
+
+This Lambda function waits for the database backup integrity script to finish running. It checks to see if the script
+has finished running. If it hasn't finished running it will wait 1 minute, then invoke itself again.  
+
+Because the script invokes itself multiple times there will be a lot of log lines. The issue with the Infobright backup 
+will be located all the way at the bottom.  
+
+Look for a log item in the format:
+
+```
+test cmd job status resp=[{'ib02.dev.code418.net': ... }]
+```
+
+This log item will contain the output of the database backup integrity test script.
