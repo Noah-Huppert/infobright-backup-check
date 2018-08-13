@@ -218,11 +218,14 @@ Expected event:
 Actions:
 
 - Check if the test volume is detached from the `ib02.dev` instance
-    - If detached: Invoke the [Cleanup step](#cleanup)
+    - If detached:
+        - Publish the status of the backup test to Datadog as the `infobright_backup_valid` metric
+        - Record the status of the Infobright backup test by tagging the backup snapshot with the `DBBackupValid` tag
+        - Invoke the [Cleanup step](#cleanup)
     - If not detached: Invoke this step again in 15 seconds
 
 ### Cleanup
-Deletes the test volume and stops the development Infobright replica.  
+Deletes the test volume.
 
 Environment variables: None
 
