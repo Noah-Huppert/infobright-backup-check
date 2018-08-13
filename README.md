@@ -11,6 +11,7 @@ Infobright backup check.
 - [Infrastructure](#infrastructure)
 - [Development](#development)
 - [CircleCI Setup](#circleci-setup)
+- [Deployment](#deployment)
 
 # Overview
 Creates and tests an Infobright disk snapshot.
@@ -177,6 +178,8 @@ Actions:
 ### Wait Test Completed
 Waits for the backup integrity test command to complete.  
 
+This can take up to 30 minutes.  
+
 Environment variables:
 
 - `NEXT_LAMBDA_NAME`: Name of the [Wait Test Volume Detached lambda](#wait-test-volume-detached)
@@ -275,3 +278,6 @@ Set the following environment variables in the CircleCI build:
 - `AWS_SECRET_ACCESS_KEY`: Set to the "password" value from the "CircleCI AWS IAM" entry in 1Password
 
 Set the `GITHUB_TOKEN` environment variable in the CircleCI build.
+
+# Deployment
+See the [run book](RUN-BOOK.md) document for details on how to deploy and manage the Infobright backup check process.
