@@ -255,20 +255,26 @@ Components:
     - For all steps
 
 # Development
-A deploy script it provided packages all step lambda code, uploads it, and then deploys a CloudFormation stack which 
-creates all the Lambdas.  
-
-Run by executing:
+## Setup
+Pipenv is used to manage python dependencies. Install all project dependencies by running:
 
 ```
-./deploy/deploy.sh
+make install
 ```
 
+## Code Linting
 Lint code by running the `lint` make target:
 
 ```
 make lint
 ```
+
+## Project Structure
+Deployment code is located in the `deploy/` directory. The `deploy.py` is used in the deployment process to package 
+and deploy code. The `stack.template` file defines a CloudFormation stack which is used in deployments.  
+
+Code related to the Infobright backup check process steps is located in the `ib_backup/` directory. Source code for 
+each step is located in the `step_*.py` files. Code shared between steps is located in the `lib/` directory. 
 
 # CircleCI Setup
 Set the following environment variables in the CircleCI build:
