@@ -4,6 +4,7 @@ Details for running the Infobright Backup Check process.
 # Table Of Contents
 - [Infrastructure Overview](#infrastructure-overview)
 - [Deploy](#deploy)
+- [DataDog Dashboard](#datadog-dashboard)
 - [View Logs](#view-logs)
 - [Debug Run Errors](#debug-run-errors)
 - [Debug Database Backup Test](#debug-database-backup-test)
@@ -27,6 +28,13 @@ CircleCI will create a GitHub release for every commit pushed to the `master` br
 Each release provides the exact command one should run to deploy that release to AWS.  
 
 [GitHub releases page](https://github.com/aminopay/infobright-backup-check/releases).
+
+# DataDog Dashboard
+Metrics like error count and run duration are graphed in the [Infobright Backup Check DataDog Dashboard](https://app.datadoghq.com/dash/889950/infobright-backup-check?live=true&page=0&is_auto=false&from_ts=1534258488237&to_ts=1534431288237&tile_size=m).  
+
+Use the error count graph to see exactly which function failed to run due to an error.  
+
+Use the run duration graph to see if any Lambda functions are taking less or more time to finish than they usually do.
 
 # View Logs
 Logs can be found in [AWS CloudWatch](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logs:prefix=/aws/lambda/dev-ib).
