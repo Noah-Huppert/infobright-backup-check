@@ -91,6 +91,17 @@
             }
         },
 
+        "StartTriggerPermission": {
+            "DependsOn": [ "StartTrigger", "StepCreateVolumeLambda" ],
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": { "Ref": "StepCreateVolumeLambda" },
+                "SourceArn": { "Fn::GetAtt": [ "StartTrigger", "Arn" ] },
+                "Principal": "events.amazonaws.com",
+                "Action": "lambda:InvokeFunction"
+            }
+        },
+
         "StepLambdaExecRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
