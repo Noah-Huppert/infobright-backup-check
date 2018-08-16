@@ -83,7 +83,7 @@
                     "start-trigger"
                 ] ] },
                 "Description": "Starts the Infobright backup test process",
-                "ScheduleExpression": "cron(0 0 * * ? *)",
+                "ScheduleExpression": "cron(0 2 * * ? *)",
                 "Targets": [ {
                     "Id": "StepCreateVolumeLambda",
                     "Arn": { "Fn::GetAtt": [ "StepCreateVolumeLambda", "Arn" ] }
