@@ -45,13 +45,13 @@ jobs:
           at: .
 
       - run:
+          name: Installing build dependencies
+          command: apt-get install -y make git zip unzip
+
+      - run:
           name: Installing Lambda Deploy
           command: |
             cd deploy && unzip lambda-deploy-master.zip && mv lambda-deploy-master lambda-deploy
-
-      - run:
-          name: Installing build dependencies
-          command: apt-get install -y make git zip
 
       - run:
           name: Installing AWS CLI
