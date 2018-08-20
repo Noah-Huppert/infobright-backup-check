@@ -48,7 +48,7 @@ jobs:
           name: Installing Git
           command: |
             apt-get update
-            apt-get install install -y git
+            apt-get install -y git
 
       - run:
           name: Updating submodules
