@@ -63,7 +63,7 @@ jobs:
       - run:
           name: Packaging, uploading, and releasing
           command: |
-            ./deploy/lambda-deploy/lambda_deploy.sh package release --env prod
+            ./deploy/lambda-deploy/lambda_deploy.sh package release --env prod --config ./deploy/config.toml
 
 workflows:
   version: 2

@@ -6,10 +6,6 @@ name = "pypi"
 [dev-packages]
 
 [packages]
-gitpython = "*"
-"boto3" = "*"
-inflection = "*"
-"flake8" = "*"
 
 [requires]
 python_version = "3.6"

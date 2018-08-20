@@ -1,0 +1,6 @@
+[package]
+bucket = "repo.code418.net"
+
+[deploy.parameters]
+SaltDevSubnetId = "subnet-f16e3daa"
+SaltDevSecurityGroupId = "sg-c9210cb6"

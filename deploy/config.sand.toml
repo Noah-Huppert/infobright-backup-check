@@ -1,0 +1,6 @@
+[package]
+bucket = "amino-sandbox-repo"
+
+[deploy.parameters]
+SaltDevSubnetId = "subnet-dfc16bf1"
+SaltDevSecurityGroupId = "sg-b66e74fd"
