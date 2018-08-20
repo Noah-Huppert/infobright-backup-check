@@ -46,7 +46,7 @@ jobs:
 
       - run:
           name: Installing build dependencies
-          command: apt-get install -y make git zip unzip
+          command: apt-get update && apt-get install -y make git zip unzip
 
       - run:
           name: Installing Lambda Deploy
