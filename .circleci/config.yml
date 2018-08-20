@@ -36,7 +36,7 @@ jobs:
 
   package_and_upload:
     docker:
-      - image: python:3.6.5-alpine
+      - image: python:3-stretch
 
     working_directory: ~/repo
 
@@ -46,7 +46,9 @@ jobs:
 
       - run:
           name: Installing Git
-          command: apk --update add git
+          command: |
+            apt-get update
+            apt-get install install -y git
 
       - run:
           name: Updating submodules
