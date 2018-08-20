@@ -44,22 +44,10 @@ jobs:
       - attach_workspace:
           at: .
 
-      - add_ssh_keys:
-          fingerprints:
-            - "52:64:0c:dd:23:bd:ad:16:a6:92:a1:dd:23:38:98:20"
-
       - run:
-          name: Installing Git
+          name: Installing Lambda Deploy
           command: |
-            apt-get update
-            apt-get install -y git
-
-      - run:
-          name: Updating submodules
-          command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
-            git submodule update --init
+            cd deploy && unzip lambda-deploy-master.zip && mv lambda-deploy-master lambda-deploy
 
       - run:
           name: Installing build dependencies
