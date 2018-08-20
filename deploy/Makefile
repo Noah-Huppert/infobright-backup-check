@@ -5,7 +5,7 @@ GH_RELEASE_SCRIPT_SRC=create_gh_release.py
 
 # install deploy script dependencies
 install:
-	pipenv install
+	cd lambda-deploy && pipenv install
 
 # lint deploy script
 lint:

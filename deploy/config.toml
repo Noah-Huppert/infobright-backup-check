@@ -1,0 +1,13 @@
+[package.lambdas]
+step_create_volume = [ "ib_backup/lib", "ib_backup/step_create_volume.py" ]
+step_wait_volume_created = [ "ib_backup/lib", "ib_backup/step_wait_volume_created.py" ]
+step_attach_volume = [ "ib_backup/lib", "ib_backup/step_attach_volume.py" ]
+step_wait_volume_attached = [ "ib_backup/lib", "ib_backup/step_wait_volume_attached.py" ]
+step_test_backup = [ "ib_backup/lib", "ib_backup/step_test_backup.py" ]
+step_wait_test_completed = [ "ib_backup/lib", "ib_backup/step_wait_test_completed.py" ]
+step_wait_volume_detached = [ "ib_backup/lib", "ib_backup/step_wait_volume_detached.py" ]
+step_cleanup = [ "ib_backup/lib", "ib_backup/step_cleanup.py" ]
+
+[deploy]
+stack_name = "ib_backup"
+template_file = "deploy/stack.template"

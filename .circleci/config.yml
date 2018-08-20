@@ -61,14 +61,9 @@ jobs:
           command: make install
 
       - run:
-          name: Packaging and uploading
+          name: Packaging, uploading, and releasing
           command: |
-            cd deploy/
-            pipenv run ./deploy.py --stages upload --env prod --save-code-bucket code-bucket.txt --save-artifact-s3-keys artifact-s3-keys.json
-
-      - run:
-          name: Creating GitHub release
-          command: ./deploy/create_gh_release.py --release --code-bucket-file code-bucket.txt --artifact-locations-file artifact-s3-keys.json
+            ./deploy/lambda-deploy/lambda_deploy.sh package release --env prod
 
 workflows:
   version: 2
