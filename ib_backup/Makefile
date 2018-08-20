@@ -4,7 +4,7 @@ STEP_SRC_PATTERN=step_*.py
 
 # install lambda function dependencies
 install:
-	pipenv install
+	pipenv --python $(which python3) install
 
 # lint step source files
 lint:
