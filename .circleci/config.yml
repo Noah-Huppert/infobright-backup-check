@@ -52,7 +52,9 @@ jobs:
 
       - run:
           name: Updating submodules
-          command: git submodule update --init
+          command: |
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git submodule update --init
 
       - run:
           name: Installing build dependencies
