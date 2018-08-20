@@ -23,7 +23,7 @@ jobs:
 
       - run:
           name: Installing Dependencies
-          command: make install
+          command: cd ib_backup && make install
         
       - run:
           name: Linting
@@ -51,7 +51,7 @@ jobs:
 
       - run:
           name: Installing build dependencies
-          command: apk add --update make git zip
+          command: apt-get install -y make git zip
 
       - run:
           name: Installing AWS CLI
