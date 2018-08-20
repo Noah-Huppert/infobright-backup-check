@@ -1,0 +1,6 @@
+
+Deploy with Salt by running:
+
+```
+# sudo salt state.apply infobright-backup-check pillar='{{"lambda_deploy_inline_config": "{deploy_inline_config_str}"}}' test=True
+```

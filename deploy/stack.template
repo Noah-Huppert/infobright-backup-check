@@ -12,7 +12,7 @@
             "Default": "ib-backup",
             "Description": "Named used in all the resources created for the backup process"
         },
-        "StepLambdaCodeBucket": {
+        "LambdaCodeBucket": {
             "Type": "String",
             "Description": "Name of the S3 bucket which step lambda code is stored in"
         },
@@ -24,35 +24,35 @@
             "Type": "String",
             "Description": "Id of security group which has access to the development Salt master"
         },
-        "StepCreateVolumeCodeKey": {
+        "StepCreateVolumeLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of create volume step lambda deployment artifact in code bucket"
         },
-        "StepWaitVolumeCreatedCodeKey": {
+        "StepWaitVolumeCreatedLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of wait volume created step lambda deployment artifact in code bucket"
         },
-        "StepAttachVolumeCodeKey": {
+        "StepAttachVolumeLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of attach volume step lambda deployment artifact in code bucket"
         },
-        "StepWaitVolumeAttachedCodeKey": {
+        "StepWaitVolumeAttachedLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of wait volume attached step lambda deployment artifact in code bucket"
         },
-        "StepTestBackupCodeKey": {
+        "StepTestBackupLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of the test backup step lambda deployment artifact in code bucket"
         },
-        "StepWaitTestCompletedCodeKey": {
+        "StepWaitTestCompletedLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of the wait test completed step lambda deployment artifact in code bucket"
         },
-        "StepWaitVolumeDetachedCodeKey": {
+        "StepWaitVolumeDetachedLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of the wait volume detached step lambda deployment artifact in code bucket"
         },
-        "StepCleanupCodeKey": {
+        "StepCleanupLambdaCodeKey": {
             "Type": "String",
             "Description": "Location of the cleanup step lambda deployment artifact in code bucket"
         },
@@ -158,8 +158,8 @@
                 ] ] },
                 "Description": "Creates a volume to test the IB snapshot",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepCreateVolumeCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepCreateVolumeLambdaCodeKey" }
                 },
                 "Handler": "step_create_volume.main",
                 "Environment": {
@@ -184,8 +184,8 @@
                 ] ] },
                 "Description": "Waits for the ib snapshot test volume to be created",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepWaitVolumeCreatedCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitVolumeCreatedLambdaCodeKey" }
                 },
                 "Handler": "step_wait_volume_created.main",
                 "Environment": {
@@ -210,8 +210,8 @@
                 ] ] },
                 "Description": "Attached the ib snapshot test volume to ib02 in development",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepAttachVolumeCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepAttachVolumeLambdaCodeKey" }
                 },
                 "Handler": "step_attach_volume.main",
                 "Environment": {
@@ -236,8 +236,8 @@
                 ] ] },
                 "Description": "Waits for the test volume to be attached to ib02 in dev",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepWaitVolumeAttachedCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitVolumeAttachedLambdaCodeKey" }
                 },
                 "Handler": "step_wait_volume_attached.main",
                 "Environment": {
@@ -262,8 +262,8 @@
                 ] ] },
                 "Description": "Tests the Infobright backup on ib02 in dev",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepTestBackupCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepTestBackupLambdaCodeKey" }
                 },
                 "Handler": "step_test_backup.main",
                 "Environment": {
@@ -295,8 +295,8 @@
                 ] ] },
                 "Description": "Waits for the Infobright backup test command to finish",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepWaitTestCompletedCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitTestCompletedLambdaCodeKey" }
                 },
                 "Handler": "step_wait_test_completed.main",
                 "Environment": {
@@ -328,8 +328,8 @@
                 ] ] },
                 "Description": "Waits for the test volume to be detached from ib02.dev",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepWaitVolumeDetachedCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepWaitVolumeDetachedLambdaCodeKey" }
                 },
                 "Handler": "step_wait_volume_detached.main",
                 "Environment": {
@@ -354,8 +354,8 @@
                 ] ] },
                 "Description": "Deletes the backup test volume",
                 "Code": {
-                    "S3Bucket": { "Ref": "StepLambdaCodeBucket" },
-                    "S3Key": { "Ref": "StepCleanupCodeKey" }
+                    "S3Bucket": { "Ref": "LambdaCodeBucket" },
+                    "S3Key": { "Ref": "StepCleanupLambdaCodeKey" }
                 },
                 "Handler": "step_cleanup.main",
                 "Role": { "Fn::GetAtt": [ "StepLambdaExecRole", "Arn" ] },

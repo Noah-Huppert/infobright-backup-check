@@ -9,5 +9,8 @@ step_wait_volume_detached = [ "ib_backup/lib", "ib_backup/step_wait_volume_detac
 step_cleanup = [ "ib_backup/lib", "ib_backup/step_cleanup.py" ]
 
 [deploy]
-stack_name = "ib_backup"
+stack_name = "ib-backup"
 template_file = "deploy/stack.template"
+
+[release]
+template_file = "./deploy/release_template_file.txt"
