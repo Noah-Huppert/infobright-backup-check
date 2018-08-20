@@ -1,6 +1,3 @@
-# Lambda deployment artifacts
-*.zip
-
 # Environment file with secrets
 .env
 
