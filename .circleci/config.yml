@@ -45,6 +45,10 @@ jobs:
           at: .
 
       - run:
+          name: Installing Git
+          command: apk --update add git
+
+      - run:
           name: Updating submodules
           command: git submodule update --init
 
