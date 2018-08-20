@@ -1,0 +1,3 @@
+[submodule "deploy/lambda-deploy"]
+	path = deploy/lambda-deploy
+	url = git@github.com:AminoPay/lambda-deploy.git
