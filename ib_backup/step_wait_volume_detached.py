@@ -86,5 +86,5 @@ def main(event, ctx):
     Raises: Any exception
     """
     step_job = WaitVolumeDetachedStep(lambda_name=lib.steps.STEP_WAIT_VOLUME_DETACHED, repeat_delay=60,
-                                      max_iteration_count=3)
+                                      max_iteration_count=10)
     step_job.run(event, ctx)
